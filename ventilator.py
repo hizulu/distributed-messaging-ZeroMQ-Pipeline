@@ -4,6 +4,7 @@ import time
 import os
 import platform
 import json
+from encryption import AES256
 
 
 class Ventilator:
@@ -13,7 +14,6 @@ class Ventilator:
     workerAddress = "tcp://*:5557"
     processId = None
     system = None
-    uniqueId = 234
 
     def __init__(self):
         self.context = zmq.Context()
@@ -35,19 +35,23 @@ class Ventilator:
     # ///////////////////////////////////////////
 
     def send(self, data):
+        print()
         sink = self.context.socket(zmq.PUSH)
         sink.connect("tcp://localhost:5558")
-
+        i = 1
         for item in data:
             packet = {
                 'client_id': item['client_unique_id'],
+                'client_key': item['client_key'],
+                'client_iv': item['client_iv'],
+                'client_port': item['client_port'],
+                'client_ip': item['client_ip'],
                 'type': item['type'],
                 'query': item['query'],
-                'timestamp': item['created_at'].strftime("%Y-%m-%d, %H:%M:%S"),
-                'sender_id': self.uniqueId
+                'timestamp': item['created_at'].strftime("%Y-%m-%d, %H:%M:%S")
             }
 
-            print(json.dumps(packet))
-        # sink.send(b'rama pradana')
-        # workload = random.randint(1, 100)
-        # self.sender.send_string(u'%i' % workload)
+            self.sender.send_json(packet)
+            print("{} ".format(i))
+            i += 1
+            # self.sender.send_string(json.dumps(encryptedPacket))

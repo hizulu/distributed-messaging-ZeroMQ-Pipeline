@@ -3,6 +3,11 @@ import time
 import zmq
 import os
 import sys
+import json
+from encryption import AES256
+import time
+
+uniqueId = 234
 
 if(len(sys.argv) == 2):
     fileName = sys.argv[1]
@@ -18,19 +23,25 @@ f.close()
 receiver = context.socket(zmq.PULL)
 receiver.connect("tcp://localhost:5557")
 
-# Socket to send messages to
-sender = context.socket(zmq.PUSH)
-sender.connect("tcp://localhost:5558")
 
 while True:
-    s = receiver.recv()
+    s = receiver.recv_json()
 
-    # Simple progress indicator for the viewer
-    sys.stdout.write('.')
-    sys.stdout.flush()
+    enc = AES256()
+    jsonPacket = {
+        'data': s['query'],
+        'sender_id': uniqueId,
+        'timestamp': s['timestamp'],
+        'type': s['type']
+    },
+    data = enc.encrypt(json.dumps(jsonPacket), s['client_key'], s['client_iv'])
+    # data = jsonPacket
+    encryptedPacket = {
+        'sender_id': uniqueId,
+        'data': data
+    }
 
-    # Do the work
-    time.sleep(int(s)*0.001)
-
-    # Send results to sink
-    sender.send(b'')
+    url = "tcp://" + s['client_ip'] + ":" + str(s['client_port'])
+    sender = context.socket(zmq.PUSH)
+    sender.connect(url)
+    sender.send_json(encryptedPacket)

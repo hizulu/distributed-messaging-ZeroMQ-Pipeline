@@ -11,21 +11,27 @@ class AES256:
         key = str.encode(key)
 
         cipher = AES.new(key, AES.MODE_CBC, iv=str.encode(iv))
+        # cipher = AES.new(key, AES.MODE_CBC)
         ct_bytes = cipher.encrypt(pad(data, AES.block_size))
         ct = b64encode(ct_bytes).decode('utf-8')
-        print(ct)
+        return ct
 
     def decrypt(self, iv, cipher, key):
         try:
+            iv = str.encode(iv)
+            iv = b64encode(iv).decode('utf-8')
             iv = b64decode(iv)
             ct = b64decode(cipher)
             key = str.encode(key)
             cipher = AES.new(key, AES.MODE_CBC, iv)
             pt = unpad(cipher.decrypt(ct), AES.block_size)
-            print(pt)
+            return pt
+
         except ValueError as ve:
-            print("Incorrect decryption value")
+            # return "Incorrect decryption value"
+            return str(ve)
         except KeyError as ke:
-            print("Incorrect decryption key")
+            # return "Incorrect decryption key"
+            return str(ke)
         finally:
             pass
