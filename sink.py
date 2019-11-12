@@ -3,15 +3,16 @@ import time
 import zmq
 import json
 from encryption import AES256
+import env
 from DatabaseConnection import DatabaseConnection
 
 
 class Sink:
-    key = 'sice2lrit9q2wvzx'
-    iv = '6YM6LfUkMAx6A27U'
     data = None
 
     def __init__(self):
+        self.key = env.SECRET_KEY
+        self.iv = env.IV_KEY
         self.context = zmq.Context()
         self.receiver = self.context.socket(zmq.PULL)
         self.receiver.bind("tcp://127.0.0.1:5558")
@@ -37,15 +38,17 @@ while True:
     s = sink.recv_json()
     print(s)
     # authenticate message
-    valid = sink.auth()
-    if(not valid):
+    if(not sink.auth()):
         continue
 
     # insert message to db
     sql = """
-        insert into tb_inbox(`query`, `type`, client_id)
-        values("{}", {}, {})
+        insert into tb_inbox(row_id, `query`, `type`, client_id, unix_timestamp)
+        values({},"{}", {}, {}, {})
     """
-    sink.db.executeCommit(sql.format(
-        s['data']['data'], s['data']['type'], s['data']['sender_id']))
+    insert = sink.db.executeCommit(sql.format(
+        s['data']['row_id'], s['data']['data'], s['data']['type'], s['data']['sender_id'], s['data']['unix_timestamp']))
+
+    # send back which message is received using worker
+
     print("end time: {}".format(int(round(time.time() * 1000))))

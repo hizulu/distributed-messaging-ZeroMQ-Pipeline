@@ -4,18 +4,19 @@ import time
 import os
 import platform
 import json
+import env
 from encryption import AES256
 
 
 class Ventilator:
     context = None
-    maxRowPerWorker = 50
     sender = None
-    workerAddress = "tcp://*:5557"
     processId = None
     system = None
 
     def __init__(self):
+        self.maxRowPerWorker = env.VEN_MAX_ROW_PER_WORKER
+        self.workerAddress = env.VEN_WORKER_ADDR
         self.context = zmq.Context()
         self.sender = self.context.socket(zmq.PUSH)
         self.sender.bind(self.workerAddress)
@@ -47,6 +48,9 @@ class Ventilator:
                 'client_port': item['client_port'],
                 'client_ip': item['client_ip'],
                 'type': item['type'],
+                'row_id': item['row_id'],
+                'msg_id': item['outbox_id'],
+                'unix_timestamp': item['unix_timestamp'],
                 'query': item['query'],
                 'timestamp': item['created_at'].strftime("%Y-%m-%d, %H:%M:%S")
             }

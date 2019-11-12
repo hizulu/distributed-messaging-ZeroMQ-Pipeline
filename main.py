@@ -4,6 +4,10 @@ from encryption import AES256
 import time
 import json
 import sys
+import env
+
+print(env.DB_HOST)
+sys.exit()
 
 log = Log()
 ven = Ventilator()
