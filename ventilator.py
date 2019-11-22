@@ -17,6 +17,7 @@ class Ventilator:
     def __init__(self):
         self.maxRowPerWorker = env.VEN_MAX_ROW_PER_WORKER
         self.workerAddress = env.VEN_WORKER_ADDR
+        self.sinkAddr = env.SINK_ADDR
         self.context = zmq.Context()
         self.sender = self.context.socket(zmq.PUSH)
         self.sender.bind(self.workerAddress)
@@ -36,9 +37,8 @@ class Ventilator:
     # ///////////////////////////////////////////
 
     def send(self, data):
-        print()
         sink = self.context.socket(zmq.PUSH)
-        sink.connect("tcp://localhost:5558")
+        sink.connect(self.sinkAddr)
         i = 1
         for item in data:
             packet = {
@@ -47,7 +47,7 @@ class Ventilator:
                 'client_iv': item['client_iv'],
                 'client_port': item['client_port'],
                 'client_ip': item['client_ip'],
-                'type': item['type'],
+                'msg_type': item['msg_type'],
                 'row_id': item['row_id'],
                 'msg_id': item['outbox_id'],
                 'unix_timestamp': item['unix_timestamp'],

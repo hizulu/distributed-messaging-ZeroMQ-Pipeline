@@ -9,7 +9,6 @@ class Log:
     username = 'rama'
     password = 'ramapradana24'
     database = 'db_ta_monitor'
-    rowLimit = '1'
 
     def __init__(self):
         self.rowLimit = env.LOG_ROW_LIMIT

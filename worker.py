@@ -6,9 +6,12 @@ import sys
 import json
 import env
 from encryption import AES256
+from DatabaseConnection import DatabaseConnection
 import time
 
 uniqueId = env.UNIQUE_ID
+db = DatabaseConnection(env.DB_HOST, env.DB_UNAME,
+                        env.DB_PASSWORD, env.DB_NAME)
 
 if(len(sys.argv) == 2):
     fileName = sys.argv[1]
@@ -29,6 +32,13 @@ while True:
     s = receiver.recv_json()
 
     # labeling row as processed
+    updateQuery = """
+        update tb_outbox set is_sent=1 where outbox_id = {}
+    """
+    if(db.executeCommit(updateQuery.format(s['msg_id']))):
+        print('sukses')
+    else:
+        print('gagal')
 
     enc = AES256()
     jsonPacket = {
@@ -38,7 +48,7 @@ while True:
         'unix_timestamp': s['unix_timestamp'],
         'row_id': s['row_id'],
         'msg_id': s['msg_id'],
-        'type': s['type']
+        'msg_type': s['msg_type']
     },
     data = enc.encrypt(json.dumps(jsonPacket), s['client_key'], s['client_iv'])
     # data = jsonPacket

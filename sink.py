@@ -1,5 +1,6 @@
 import sys
 import time
+import datetime
 import zmq
 import json
 from encryption import AES256
@@ -43,12 +44,23 @@ while True:
 
     # insert message to db
     sql = """
-        insert into tb_inbox(row_id, `query`, `type`, client_id, unix_timestamp)
-        values({},"{}", {}, {}, {})
+        insert into tb_inbox(row_id, msg_id, `query`, `type`, client_id, unix_timestamp)
+        values({}, {},"{}", {}, {}, {})
     """
     insert = sink.db.executeCommit(sql.format(
-        s['data']['row_id'], s['data']['data'], s['data']['type'], s['data']['sender_id'], s['data']['unix_timestamp']))
+        s['data']['row_id'], s['data']['msg_id'], s['data']['data'], s['data']['type'], s['data']['sender_id'], s['data']['unix_timestamp']))
 
     # send back which message is received using worker
+    ackQuery = """
+    insert into tb_outbox(row_id, msg_type, client_unique_id, unix_timestamp, created_at, updated_at)
+    values({}, {}, {}, {}, {}, {})
+    """
+
+    data = s['data']
+    unix_timestamp = int(time.time())
+    dttime = datetime.datetime.utcfromtimestamp(
+        unix_timestamp).strftime('%Y-%m-%d %H:%M:%S')
+    sink.db.executeCommit(ackQuery.format(
+        data['row_id'], "ACK", data['sender_id'], unix_timestamp, dttime, dttime))
 
     print("end time: {}".format(int(round(time.time() * 1000))))

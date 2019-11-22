@@ -33,6 +33,8 @@ class DatabaseConnection:
             with self.conn.cursor() as cursor:
                 cursor.execute(sql)
                 return cursor.fetchall()
+        except (pymysql.err.InternalError, pymysql.err.ProgrammingError, pymysql.err.MySQLError) as e:
+            return False
         finally:
             self.close()
     # ///////////////////////////////////////////
@@ -43,7 +45,9 @@ class DatabaseConnection:
             with self.conn.cursor() as cursor:
                 cursor.execute(sql)
                 self.conn.commit()
-
+            return True
+        except (pymysql.err.InternalError, pymysql.err.ProgrammingError, pymysql.err.MySQLError) as e:
+            return False
         finally:
             self.close()
     # ///////////////////////////////////////////
