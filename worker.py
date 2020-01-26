@@ -23,7 +23,7 @@ context = zmq.Context()
 f = open("process/"+fileName, "a+")
 f.write(str(os.getpid()) + "\n")
 f.close()
-# # Socket to receive messages on
+# Socket to receive messages on
 receiver = context.socket(zmq.PULL)
 receiver.connect("tcp://localhost:5557")
 
@@ -33,7 +33,7 @@ while True:
 
     # labeling row as processed
     updateQuery = """
-        update tb_outbox set is_sent=1 where outbox_id = {}
+        update tb_sync_outbox set is_sent=1 where outbox_id = {}
     """
     if(db.executeCommit(updateQuery.format(s['msg_id']))):
         print('sukses')
@@ -47,8 +47,10 @@ while True:
         'timestamp': s['timestamp'],
         'unix_timestamp': s['unix_timestamp'],
         'row_id': s['row_id'],
+        'table_name': s['table_name'],
         'msg_id': s['msg_id'],
-        'msg_type': s['msg_type']
+        'msg_type': s['msg_type'],
+        'master_status': 1 if env.MASTER_NODE == True else 0
     },
     data = enc.encrypt(json.dumps(jsonPacket), s['client_key'], s['client_iv'])
     # data = jsonPacket

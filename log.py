@@ -12,14 +12,15 @@ class Log:
 
     def __init__(self):
         self.rowLimit = env.LOG_ROW_LIMIT
-        self.db = DatabaseConnection(env.DB_HOST, env.DB_UNAME,
-                                     env.DB_PASSWORD, env.DB_NAME)
+        self.db = DatabaseConnection(
+            env.DB_HOST, env.DB_UNAME, env.DB_PASSWORD, env.DB_NAME)
     # ///////////////////////////////////////////
 
     def getUnproceessLog(self):
         query = """
-            select * from tb_outbox 
-            join tb_client on tb_client.client_id = tb_outbox.client_id 
+            select * from tb_sync_outbox 
+            join tb_sync_client on tb_sync_client.client_unique_id = tb_sync_outbox.client_unique_id 
             where is_sent = 0 limit """ + self.rowLimit
-        return self.db.executeFetchAll(query)
+        result = self.db.executeFetchAll(sql=query)
+        return result
     # ///////////////////////////////////////////

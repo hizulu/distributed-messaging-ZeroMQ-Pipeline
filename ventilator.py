@@ -49,6 +49,7 @@ class Ventilator:
                 'client_ip': item['client_ip'],
                 'msg_type': item['msg_type'],
                 'row_id': item['row_id'],
+                'table_name': item['table_name'],
                 'msg_id': item['outbox_id'],
                 'unix_timestamp': item['unix_timestamp'],
                 'query': item['query'],
