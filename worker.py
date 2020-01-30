@@ -13,16 +13,16 @@ uniqueId = env.UNIQUE_ID
 db = DatabaseConnection(env.DB_HOST, env.DB_UNAME,
                         env.DB_PASSWORD, env.DB_NAME)
 
-if(len(sys.argv) == 2):
-    fileName = sys.argv[1]
-else:
-    fileName = 'worker_process.id'
+# if(len(sys.argv) == 2):
+#     fileName = sys.argv[1]
+# else:
+#     fileName = 'worker_process.id'
 
-print(fileName)
+# print(fileName)
 context = zmq.Context()
-f = open("process/"+fileName, "a+")
-f.write(str(os.getpid()) + "\n")
-f.close()
+# f = open("process/"+fileName, "a+")
+# f.write(str(os.getpid()) + "\n")
+# f.close()
 # Socket to receive messages on
 receiver = context.socket(zmq.PULL)
 receiver.connect("tcp://localhost:5557")
