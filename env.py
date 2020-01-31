@@ -9,8 +9,8 @@ DB_PORT = 3306
 DB_NAME = "db_ta"
 
 UNIQUE_ID = 234
-SINK_ADDR = 'tcp://127.0.0.1:5558'
-RECEIVER_ADDR = 'tcp://127.0.0.1:5560'
+SINK_ADDR = 'tcp://192.168.229.1:5558'
+RECEIVER_ADDR = 'tcp://192.168.229.1:5560'
 
 # sink
 SECRET_KEY = "sice2lrit9q2wvzx"

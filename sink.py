@@ -15,10 +15,10 @@ class Sink:
         self.key = env.SECRET_KEY
         self.iv = env.IV_KEY
         self.context = zmq.Context()
-        self.receiver = self.context.socket(zmq.PULL)
-        self.receiver.bind("tcp://127.0.0.1:5558")
+        # self.receiver = self.context.socket(zmq.PULL)
+        # self.receiver.bind("tcp://127.0.0.1:5558")
         self.db = DatabaseConnection(
-            env.DB_HOST, env.DB_UNAME, env.DB_PASSWORD, 'db_ta1')
+            env.DB_HOST, env.DB_UNAME, env.DB_PASSWORD, env.DB_NAME)
 
     def recv_json(self):
         msg = self.receiver.recv_json()

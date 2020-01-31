@@ -11,7 +11,7 @@ class Sync:
 
     def __init__(self):
         self.syncDB = DatabaseConnection(
-            env.DB_HOST, env.DB_UNAME, env.DB_PASSWORD, 'db_ta1')
+            env.DB_HOST, env.DB_UNAME, env.DB_PASSWORD, env.DB_NAME)
         self.limitRow = env.LIMIT_PROC_ROW
         self.outbox = Outbox(self.syncDB)
         self.systemlog = SystemLog()
