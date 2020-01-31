@@ -54,7 +54,12 @@ class Sync:
                         'row_id': rowId,
                         'table_name': data['table_name'],
                         'msg_type': 'INS',
-                        'msg_id':}
+                        'msg_id': 0,
+                        'query': data['query'],
+                        'client_unique_id': client['client_unique_id']
+                    }
+
+                    self.outbox.insert(outboxData)
             msg = {
                 'row_id': rowId,  # local row id
                 'table_name': data['table_name'],
