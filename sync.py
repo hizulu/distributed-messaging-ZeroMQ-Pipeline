@@ -49,6 +49,12 @@ class Sync:
                     # the origin of the msg
                     if(client['client_unique_id'] == data['client_unique_id']):
                         continue
+
+                    outboxData = {
+                        'row_id': rowId,
+                        'table_name': data['table_name'],
+                        'msg_type': 'INS',
+                        'msg_id':}
             msg = {
                 'row_id': rowId,  # local row id
                 'table_name': data['table_name'],
