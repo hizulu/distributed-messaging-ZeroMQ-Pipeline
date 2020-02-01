@@ -47,25 +47,26 @@ class Sync:
                 }
                 if(not self.inbox.insert(inbox)):
                     print(self.syncDB.getLastCommitError())
-            elif(data['master_status'] == 0 and env.MASTER_NODE):
-                # send to other client if avaiable
-                clients = self.getClient()
-                for client in clients['data']:
-                    # insert every msg to client exept
-                    # the origin of the msg
-                    if(client['client_unique_id'] == data['client_unique_id']):
-                        continue
+            # elif(data['master_status'] == 0 and env.MASTER_NODE):
+            #     # send to other client if avaiable
+            #     clients = self.getClient()
+            #     for client in clients['data']:
+            #         # insert every msg to client exept
+            #         # the origin of the msg
+            #         if(client['client_unique_id'] == data['client_unique_id']):
+            #             continue
 
-                    outboxData = {
-                        'row_id': rowId,
-                        'table_name': data['table_name'],
-                        'msg_type': 'INS',
-                        'msg_id': 0,
-                        'query': data['query'],
-                        'client_unique_id': client['client_unique_id']
-                    }
+            #         outboxData = {
+            #             'row_id': rowId,
+            #             'table_name': data['table_name'],
+            #             'msg_type': 'INS',
+            #             'msg_id': 0,
+            #             'query': data['query'],
+            #             'client_unique_id': client['client_unique_id']
+            #         }
 
-                    self.outbox.insert(outboxData)
+            #         self.outbox.insert(outboxData)
+            # send ACK to the sender
             msg = {
                 'row_id': rowId,  # local row id
                 'table_name': data['table_name'],
