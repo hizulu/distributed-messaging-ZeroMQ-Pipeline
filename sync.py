@@ -26,6 +26,12 @@ class Sync:
         insert = self.syncDB.executeCommit(data['query'])
         if(insert):
             rowId = self.syncDB.lastRowId
+
+            # set result primary key to table inbox
+            query = "update tb_sync_inbox set result_primary_key = {} where inbox_id = {}"
+            insert = self.syncDB.executeCommit(
+                query.format(rowId, data['inbox_id']))
+
             # if the msg is sent from master
             # update primary key right away
             if(data['master_status'] == 1):

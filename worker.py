@@ -62,4 +62,4 @@ while True:
     url = "tcp://" + s['client_ip'] + ":" + str(s['client_port'])
     sender = context.socket(zmq.PUSH)
     sender.connect(url)
-    print(sender.send_json(encryptedPacket))
+    sender.send_json(encryptedPacket)
