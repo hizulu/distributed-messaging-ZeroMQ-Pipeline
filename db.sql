@@ -162,8 +162,6 @@ CREATE TABLE `tb_sync_synchronization` (
 
 DELIMITER $$
 
-/*!50003 DROP TRIGGER*//*!50032 IF EXISTS */ /*!50003 `after_insert_buku` */$$
-
 /*!50003 CREATE */ /*!50017 DEFINER = 'rama'@'%' */ /*!50003 TRIGGER `after_insert_buku` AFTER INSERT ON `tb_buku` FOR EACH ROW BEGIN
 	declare qry text;
 	declare tb varchar(100);
@@ -181,8 +179,6 @@ DELIMITER ;
 /* Trigger structure for table `tb_sync_changelog` */
 
 DELIMITER $$
-
-/*!50003 DROP TRIGGER*//*!50032 IF EXISTS */ /*!50003 `after_insert_changelog` */$$
 
 /*!50003 CREATE */ /*!50017 DEFINER = 'rama'@'%' */ /*!50003 TRIGGER `after_insert_changelog` AFTER INSERT ON `tb_sync_changelog` FOR EACH ROW BEGIN
 	
@@ -214,8 +210,6 @@ DELIMITER $$
 DELIMITER ;
 
 /* Procedure structure for procedure `generate_id` */
-
-/*!50003 DROP PROCEDURE IF EXISTS  `generate_id` */;
 
 DELIMITER $$
 
