@@ -53,17 +53,19 @@ while True:
     print(insert)
 
     # send back which message is received using worker
-    ackQuery = """
-    insert into tb_sync_outbox(row_id, table_name, msg_type, msg_id, client_unique_id, unix_timestamp, created_at, updated_at)
-    values({}, "{}", "{}", {}, {}, {}, "{}", "{}")
-    """
+    # only reply non-ACK msg
+    if(s['data']['msg_type'] != 'ACK'):
+        ackQuery = """
+        insert into tb_sync_outbox(row_id, table_name, msg_type, msg_id, client_unique_id, unix_timestamp, created_at, updated_at)
+        values({}, "{}", "{}", {}, {}, {}, "{}", "{}")
+        """
 
-    data = s['data']
-    unix_timestamp = int(time.time())
-    dttime = datetime.datetime.utcfromtimestamp(
-        unix_timestamp).strftime('%Y-%m-%d %H:%M:%S')
-    sink.db.executeCommit(autoconnect=False, sql=ackQuery.format(
-        0, data['table_name'], "ACK", data['msg_id'], data['sender_id'], unix_timestamp, dttime, dttime))
+        data = s['data']
+        unix_timestamp = int(time.time())
+        dttime = datetime.datetime.utcfromtimestamp(
+            unix_timestamp).strftime('%Y-%m-%d %H:%M:%S')
+        sink.db.executeCommit(autoconnect=False, sql=ackQuery.format(
+            0, data['table_name'], "ACK", data['msg_id'], data['sender_id'], unix_timestamp, dttime, dttime))
 
     sink.db.close()
     print("end time: {}".format(int(round(time.time() * 1000))))
