@@ -112,7 +112,7 @@ class Sync:
         return True
 
     def processAck(self, data):
-        ackQuery = "update tb_sync_outbox set_is_arrived=1 where outbox_id = {}".format(
+        ackQuery = "update tb_sync_outbox set_is_arrived=1, status='arrived' where outbox_id = {}".format(
             data['msg_id'])
         ack = self.syncDB.executeCommit(ackQuery)
         if(not ack):
