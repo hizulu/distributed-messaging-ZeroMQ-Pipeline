@@ -5,6 +5,7 @@ from outbox import Outbox
 from systemlog import SystemLog
 from inbox import Inbox
 import json
+import time
 
 
 class Sync:
@@ -119,6 +120,8 @@ class Sync:
             errorQuery = 'update tb_sync_outbox set is_error=1 where outbox_id = {}'.format(
                 data['msg_id'])
             self.syncDB.executeCommit(errorQuery)
+        else:
+            self.setAsProcessed(data['inbox_id'])
         return True
 
     def getData(self):
@@ -132,7 +135,7 @@ class Sync:
     def setAsProcessed(self, id):
         query = 'update tb_sync_inbox set is_process=1 where inbox_id = {}'.format(
             id)
-        self.syncDB.executeCommit(query)
+        print(self.syncDB.executeCommit(query))
 
     def reply(self, code, msg):
         return True
@@ -141,22 +144,27 @@ class Sync:
 sync = Sync()
 # sync.db.insError("test")
 # sys.exit()
-inbox = sync.getData()
-if(inbox['execute_status']):
-    for item in inbox['data']:
-        msgType = item['msg_type']
-        if(msgType == 'INS'):
-            sync.processInsert(item)
-        elif(msgType == 'UPD'):
-            sync.processUpdate(item)
-        elif(msgType == 'DEL'):
-            sync.processDelete(item)
-        elif(msgType == 'ACK'):
-            sync.processAck(item)
-        elif(msgType == "PRI"):
-            sync.processPrimaryKey(item)
+while True:
+    inbox = sync.getData()
+    if(inbox['execute_status']):
+        if(inbox['data']):
+            for item in inbox['data']:
+                print("Processing: {}".format(item['inbox_id']))
+                msgType = item['msg_type']
+                if(msgType == 'INS'):
+                    sync.processInsert(item)
+                elif(msgType == 'UPD'):
+                    sync.processUpdate(item)
+                elif(msgType == 'DEL'):
+                    sync.processDelete(item)
+                elif(msgType == 'ACK'):
+                    sync.processAck(item)
+                elif(msgType == "PRI"):
+                    sync.processPrimaryKey(item)
+                else:
+                    sync.db.insError("Msg type not found for id=" +
+                                     str(item['inbox_id']))
         else:
-            sync.db.insError("Msg type not found for id=" +
-                             str(item['inbox_id']))
-else:
-    print('Error')
+            time.sleep(1)
+    else:
+        print('Error')
