@@ -15,7 +15,7 @@ while True:
             startTime = int(round(time.time() * 1000))
             ven.send(task['data'])
             print("start time : {}".format(startTime))
-            sys.exit()
+            # sys.exit()
         else:
             time.sleep(1)
     else:

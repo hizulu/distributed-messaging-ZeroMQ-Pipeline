@@ -33,7 +33,7 @@ while True:
 
     # labeling row as processed
     updateQuery = """
-        update tb_sync_outbox set is_sent=1 and status='sent' where outbox_id = {}
+        update tb_sync_outbox set is_sent=1, status='sent' where outbox_id = {}
     """
     if(db.executeCommit(updateQuery.format(s['msg_id']))):
         print('sukses')

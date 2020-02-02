@@ -80,7 +80,7 @@ class Ventilator:
             else:
                 isValid = True
 
-            print(isValid)
+            # print(isValid)
             # sys.exit()
             if(isValid):
                 packet = {
