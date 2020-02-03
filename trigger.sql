@@ -22,7 +22,7 @@ DELIMITER $$
 	declare qry text;
 	declare tb varchar(100);
 
-	set qry := concat("insert into tb_buku(nama_buku, jenisbuku_id, isbn, created_at, updated_at) values(", "'", new.nama_buku, "',", new.jenisbuku_id, ",'", new.isbn, "','", new.created_at, "','", new.updated_at, "')");
+	set qry := concat("insert into tb_buku(nama_buku, jenisbuku_id, isbn, created_at, updated_at, timestamp_sync) values(", "'", new.nama_buku, "',", new.jenisbuku_id, ",'", new.isbn, "','", new.created_at, "','", new.updated_at, "','", new.timestamp_sync, "')");
 	set tb := "tb_buku";
 	
 	
