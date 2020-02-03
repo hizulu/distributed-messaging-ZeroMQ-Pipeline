@@ -50,7 +50,7 @@ while True:
     checkMsgQuery = """
         select ifnull(count(*), 0) as total from tb_sync_inbox where msg_id = {} and client_unique_id = {}
     """
-    checkMsg = sink.db.executeFetchOne(checkMsgQuery.format(
+    checkMsg = sink.db.executeFetchOne(autoconnect=False, checkMsgQuery.format(
         s['data']['msg_id'], s['data']['sender_id']))
     if(checkMsg['execute_status']):
         if(checkMsg['data']['total'] <= 0):
