@@ -23,9 +23,10 @@ class Sync:
         return self.syncDB.executeFetchAll(sql)
 
     def processInsert(self, data):
-        print(data)
+        print('Processing inbox: {}'.format(data['inbox_id']), end=": ")
         insert = self.syncDB.executeCommit(data['query'])
         if(insert):
+            print('success')
             rowId = self.syncDB.lastRowId
 
             # set result primary key to table inbox
@@ -78,6 +79,8 @@ class Sync:
             }
             self.outbox.insert(msg)
             self.setAsProcessed(data['inbox_id'])
+        else:
+            print('error')
         return True
 
     # method ini digunakan untuk memproses update primary key
