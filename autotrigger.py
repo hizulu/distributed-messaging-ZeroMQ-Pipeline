@@ -2,7 +2,7 @@ from DatabaseConnection import DatabaseConnection
 import env
 
 
-class AutoTrigger:
+class Initiation:
 
     def __init__(self):
         # self.dbName = "db_autotrigger"
@@ -26,7 +26,7 @@ class AutoTrigger:
 
         return self.db.executeFetchAll(query.format(self.dbName, tableName))
 
-    def generate(self):
+    def generateTrigger(self):
         # createing after insert change log trigger
         print('Creating Changelog Trigger')
         createAfterInsertChangelogTrigger = """CREATE TRIGGER `after_insert_changelog` AFTER INSERT ON `tb_sync_changelog` FOR EACH ROW BEGIN DECLARE finished INTEGER DEFAULT 0;DECLARE id INTEGER(11);DECLARE curClient CURSOR FOR SELECT client_unique_id FROM tb_sync_client;DECLARE CONTINUE HANDLER FOR NOT FOUND SET finished = 1;OPEN curClient;getClient: LOOP FETCH curClient INTO id; IF finished = 1 THEN LEAVE getClient; END IF; INSERT INTO tb_sync_outbox(row_id, table_name, `query`, msg_type, `client_unique_id`, created_at, updated_at, `unix_timestamp`) VALUES(new.row_id, new.table, new.query, new.type, id, new.created_at, NOW(), new.unix_timestamp); END LOOP getClient;CLOSE curClient; END"""

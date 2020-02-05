@@ -74,7 +74,7 @@ while True:
         # only reply non-ACK msg
         if(s['data']['msg_type'] != 'ACK'):
             ackQuery = """
-            insert into tb_sync_outbox(row_id, table_name, msg_type, msg_id, client_unique_id, unix_timestamp, created_at, updated_at)
+            insert into tb_sync_outbox(row_id, table_name, msg_type, query, client_unique_id, unix_timestamp, created_at, updated_at)
             values({}, "{}", "{}", {}, {}, {}, "{}", "{}")
             """
 
