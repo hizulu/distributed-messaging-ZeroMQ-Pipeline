@@ -44,6 +44,7 @@ class Sync:
                     'msg_type': 'PRI',
                     'msg_id': 0,
                     'query': data['row_id'],
+                    'result_primary_key': ['row_id'],
                     'client_unique_id': 0,
                     'master_status': 0
                 }
@@ -103,7 +104,7 @@ class Sync:
 
             if(update):
                 # update PK success
-                print("UPdated PK")
+                print("Updated PK")
                 self.setAsProcessed(data['inbox_id'])
             else:
                 self.systemlog.insert(
@@ -123,6 +124,9 @@ class Sync:
             errorQuery = 'update tb_sync_outbox set is_error=1 where outbox_id = {}'.format(
                 data['msg_id'])
             self.syncDB.executeCommit(errorQuery)
+
+            self.systemlog.insert("processACK", "Gagal update ACK ID#{} ERROR: {}".format(
+                data['inbox_id'], self.syncDB.getLastCommitError()['msg']))
         else:
             self.setAsProcessed(data['inbox_id'])
         return True
