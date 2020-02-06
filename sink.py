@@ -47,14 +47,14 @@ while True:
     # authenticate message
     # if(not sink.auth()):
     #     continue
-    sink.db.connect()
+    # sink.db.connect()
     # check msg apakah pesan tersebut sudah pernah masuk
     # atau tidak
     accepted = False
     checkMsgQuery = """
         select ifnull(count(*), 0) as total from tb_sync_inbox where msg_id = {} and client_unique_id = {}
     """
-    checkMsg = sink.db.executeFetchOne(autoconnect=False, sql=checkMsgQuery.format(
+    checkMsg = sink.db.executeFetchOne(sql=checkMsgQuery.format(
         s['data']['msg_id'], s['data']['client_unique_id']))
     if(checkMsg['execute_status']):
         if(checkMsg['data']['total'] <= 0):
@@ -88,5 +88,4 @@ while True:
                 'msg_id': 0
             })
 
-    sink.db.close()
     print("end time: {}".format(int(round(time.time() * 1000))))
