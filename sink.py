@@ -85,6 +85,7 @@ while True:
                 'msg_type': 'ACK',
                 'query': data['msg_id'],
                 'client_unique_id': data['client_unique_id'],
+                'msg_id': 0
             })
 
     sink.db.close()
