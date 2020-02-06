@@ -25,7 +25,7 @@ CREATE TABLE `tb_buku` (
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `last_action_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`buku_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2058 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=2067 DEFAULT CHARSET=utf8;
 
 /*Table structure for table `tb_sync_changelog` */
 
@@ -38,11 +38,11 @@ CREATE TABLE `tb_sync_changelog` (
   `query` text,
   `type` varchar(5) DEFAULT NULL,
   `is_proceed` tinyint(4) DEFAULT '0',
+  `first_time_occur_at` bigint(20) DEFAULT NULL,
   `occur_at` bigint(20) DEFAULT NULL,
-  `first_time_occur_at` bigint(20) DEFAULT NULL COMMENT 'time the msg created for the first time',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`log_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2055 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=2069 DEFAULT CHARSET=utf8;
 
 /*Table structure for table `tb_sync_client` */
 
@@ -137,7 +137,7 @@ CREATE TABLE `tb_sync_outbox` (
   `created_at` datetime DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`outbox_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2662 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=2667 DEFAULT CHARSET=utf8;
 
 /*Table structure for table `tb_sync_setting` */
 
@@ -168,15 +168,17 @@ DELIMITER $$
 
 /*!50003 DROP TRIGGER*//*!50032 IF EXISTS */ /*!50003 `after_insert_buku` */$$
 
-/*!50003 CREATE */ /*!50017 DEFINER = 'rama'@'%' */ /*!50003 TRIGGER `after_insert_buku` AFTER INSERT ON `tb_buku` FOR EACH ROW BEGIN
+/*!50003 CREATE TRIGGER `after_insert_buku` AFTER INSERT ON `tb_buku` FOR EACH ROW BEGIN
 	declare qry text;
 	declare tb varchar(100);
+	declare action_at int(11);
 
 	set qry := concat("insert into tb_buku(nama_buku, jenisbuku_id, isbn, created_at, updated_at, last_action_at) values(", "'", new.nama_buku, "',", new.jenisbuku_id, ",'", new.isbn, "','", new.created_at, "','", new.updated_at, "','", new.last_action_at, "')");
 	set tb := "tb_buku";
 	
+	set action_at := UNIX_TIMESTAMP(new.last_action_at);
 	
-	insert into `tb_sync_changelog`(`query`, `table`, `type`, row_id, occur_at, first_time_occur_at) values(qry, tb, 'INS', new.buku_id, unix_timestamp(), unix_timestamp(new.last_action_at));
+	insert into `tb_sync_changelog`(`query`, `table`, `type`, row_id, occur_at, first_time_occur_at) values(qry, tb, 'INS', new.buku_id, unix_timestamp(), action_at);
     END */$$
 
 
@@ -188,7 +190,7 @@ DELIMITER $$
 
 /*!50003 DROP TRIGGER*//*!50032 IF EXISTS */ /*!50003 `after_insert_changelog` */$$
 
-/*!50003 CREATE */ /*!50017 DEFINER = 'rama'@'%' */ /*!50003 TRIGGER `after_insert_changelog` AFTER INSERT ON `tb_sync_changelog` FOR EACH ROW BEGIN
+/*!50003 CREATE TRIGGER `after_insert_changelog` AFTER INSERT ON `tb_sync_changelog` FOR EACH ROW BEGIN
 	
 	declare finished integer default 0;
 	declare id integer(11);
@@ -206,8 +208,8 @@ DELIMITER $$
 			leave getClient;
 		end if;
 		
-		insert into tb_sync_outbox(row_id, table_name, `query`, msg_type, `client_unique_id`, created_at, updated_at, occur_at, first_time_occur_at)
-		values(new.row_id, new.table, new.query, new.type, id, new.created_at, now(), new.occur_at, unix_timestamp(new.first_time_occur_at));
+		insert into tb_sync_outbox(row_id, table_name, `query`, msg_type, `client_unique_id`, created_at, occur_at, first_time_occur_at)
+		values(new.row_id, new.table, new.query, new.type, id, new.created_at, new.occur_at, new.first_time_occur_at);
 	end loop getClient;
 	
 	close curClient;
@@ -215,6 +217,39 @@ DELIMITER $$
     END */$$
 
 
+DELIMITER ;
+
+/* Procedure structure for procedure `generate_id` */
+
+/*!50003 DROP PROCEDURE IF EXISTS  `generate_id` */;
+
+DELIMITER $$
+
+/*!50003 CREATE DEFINER=`rama`@`%` PROCEDURE `generate_id`(in table_name varchar(255))
+BEGIN
+		
+		declare primary_key varchar(255);
+		declare db_name varchar(255);
+		declare max_id integer(11);
+		
+		#select db name and primary key of the table
+		SELECT DATABASE() into db_name FROM DUAL; #db that currently active
+		select COLUMN_NAME INTO primary_key from information_schema.`COLUMNS` 
+		where information_schema.`COLUMNS`.`TABLE_SCHEMA` = db_name 
+		and information_schema.`COLUMNS`.`TABLE_NAME` = table_name
+		and information_schema.`COLUMNS`.`COLUMN_KEY` = 'PRI';
+		
+		set @query = concat('select max(', primary_key, ') into @max_id from ', table_name);
+		
+		prepare stmt from @query;
+		execute stmt;
+		DEALLOCATE PREPARE stmt;
+		select @max_id;
+		
+		#select @query;
+		#select primary_key;
+		
+	END */$$
 DELIMITER ;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
