@@ -48,7 +48,7 @@ class Inbox:
         for key in where_clause:
             i += 1
             query += "{}='{}'".format(key, where_clause[key])
-            if(i < column_count):
+            if(i < where_count):
                 query += ' and '
 
         return self.db.executeCommit(query)

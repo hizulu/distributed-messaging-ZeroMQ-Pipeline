@@ -12,11 +12,11 @@ while True:
     task = log.getUnproceessLog()
     if(task['execute_status']):
         if(task['data']):
-            startTime = int(round(time.time() * 1000))
+            print("{} Data being send".format(len(task['data'])))
             ven.send(task['data'])
-            print("start time : {}".format(startTime))
             # sys.exit()
         else:
             time.sleep(1)
     else:
         print('Error retrieving data')
+    sys.exit()

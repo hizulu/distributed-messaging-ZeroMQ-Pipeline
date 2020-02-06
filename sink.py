@@ -65,7 +65,7 @@ while True:
 
     # insert message to db
     if(accepted):
-        insert = self.inbox.insert(s['data'])
+        insert = sink.inbox.insert(s['data'])
         # sql = """
         #     insert into tb_sync_inbox(row_id, table_name, msg_id, `query`, `msg_type`, client_unique_id, master_status, occur_at, first_time_occur_at)
         #     values({}, "{}", {},"{}", "{}", {}, {}, {}, {})
