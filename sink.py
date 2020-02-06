@@ -79,7 +79,7 @@ while True:
         # only reply non-ACK msg
         if(s['data']['msg_type'] != 'ACK'):
             data = s['data']
-            self.outbox.insert(data={
+            sink.outbox.insert(data={
                 'row_id': 0,
                 'table_name': data['table_name'],
                 'msg_type': 'ACK',
