@@ -51,7 +51,7 @@ while True:
         'first_time_occur_at': s['first_time_occur_at'],
         'row_id': s['row_id'],
         'table_name': s['table_name'],
-        'msg_id': s['`msg_id`'],
+        'msg_id': s['msg_id'],
         'msg_type': s['msg_type'],
         'master_status': 1 if env.MASTER_NODE == True else 0
     },
