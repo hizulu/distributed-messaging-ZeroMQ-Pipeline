@@ -7,6 +7,8 @@ from encryption import AES256
 import env
 from DatabaseConnection import DatabaseConnection
 from systemlog import SystemLog
+from inbox import Inbox
+from outbox import Outbox
 
 
 class Sink:
@@ -21,6 +23,8 @@ class Sink:
         self.syslog = SystemLog()
         self.db = DatabaseConnection(
             env.DB_HOST, env.DB_UNAME, env.DB_PASSWORD, env.DB_NAME)
+        self.inbox = Inbox(self.db)
+        self.outbox = Outbox(self.db)
 
     def recv_json(self):
         msg = self.receiver.recv_json()
@@ -61,29 +65,27 @@ while True:
 
     # insert message to db
     if(accepted):
-        sql = """
-            insert into tb_sync_inbox(row_id, table_name, msg_id, `query`, `msg_type`, client_unique_id, master_status, unix_timestamp)
-            values({}, "{}", {},"{}", "{}", {}, {}, {})
-        """
+        insert = self.inbox.insert(s['data'])
+        # sql = """
+        #     insert into tb_sync_inbox(row_id, table_name, msg_id, `query`, `msg_type`, client_unique_id, master_status, occur_at, first_time_occur_at)
+        #     values({}, "{}", {},"{}", "{}", {}, {}, {}, {})
+        # """
 
-        insert = sink.db.executeCommit(autoconnect=False, sql=sql.format(
-            s['data']['row_id'], s['data']['table_name'], s['data']['msg_id'], s['data']['data'], s['data']['msg_type'], s['data']['sender_id'], s['data']['master_status'], s['data']['unix_timestamp']))
+        # insert = sink.db.executeCommit(autoconnect=False, sql=sql.format(
+        #     s['data']['row_id'], s['data']['table_name'], s['data']['msg_id'], s['data']['data'], s['data']['msg_type'], s['data']['sender_id'], s['data']['master_status'], s['data']['unix_timestamp']))
         print(insert)
 
         # send back which message is received using worker
         # only reply non-ACK msg
         if(s['data']['msg_type'] != 'ACK'):
-            ackQuery = """
-            insert into tb_sync_outbox(row_id, table_name, msg_type, query, client_unique_id, unix_timestamp, created_at, updated_at)
-            values({}, "{}", "{}", {}, {}, {}, "{}", "{}")
-            """
-
             data = s['data']
-            unix_timestamp = int(time.time())
-            dttime = datetime.datetime.utcfromtimestamp(
-                unix_timestamp).strftime('%Y-%m-%d %H:%M:%S')
-            sink.db.executeCommit(autoconnect=False, sql=ackQuery.format(
-                0, data['table_name'], "ACK", data['msg_id'], data['sender_id'], unix_timestamp, dttime, dttime))
+            self.outbox.insert(data={
+                'row_id': 0,
+                'table_name': data['table_name'],
+                'msg_type': 'ACK',
+                'query': data['msg_id'],
+                'client_unique_id': data['sender_id'],
+            })
 
     sink.db.close()
     print("end time: {}".format(int(round(time.time() * 1000))))

@@ -4,7 +4,7 @@ import time
 
 
 class Outbox:
-    def __init__(self, db):
+    def __init__(self, db=None):
         self.db = db
 
     def insert(self, data):
@@ -18,12 +18,38 @@ class Outbox:
         string_query = data['query']
         # client_uid = receiver id
         client_uid = data['client_unique_id']
-        unix_timestamp = int(time.time())
+        unix_timestamp = data['occur_at'] if 'occur_at' in data else int(
+            time.time())
+        first_time_occur_at = data['first_time_occur_at'] if 'first_time_occur_at' in data else unix_timestamp
         dttime = datetime.datetime.utcfromtimestamp(
             unix_timestamp).strftime('%Y-%m-%d %H:%M:%S')
         query = """
-            insert into tb_sync_outbox(row_id, table_name, msg_type, msg_id, query, client_unique_id, unix_timestamp, created_at, updated_at)
-            values({}, "{}", "{}", {}, "{}", {}, {}, "{}", "{}")
-        """.format(rowId, table_name, msg_type, msg_id, string_query, client_uid, unix_timestamp, dttime, dttime)
+            insert into tb_sync_outbox(row_id, table_name, msg_type, msg_id, query, client_unique_id, occur_at, first_time_occur_at, created_at, updated_at)
+            values({}, "{}", "{}", {}, "{}", {}, {}, {}, "{}", "{}")
+        """.format(rowId, table_name, msg_type, msg_id, string_query, client_uid, unix_timestamp, first_time_occur_at, dttime, dttime)
 
-        self.db.executeCommit(sql=query)
+        return self.db.executeCommit(sql=query)
+
+    def update(self, data, where_clause):
+        query = 'update tb_sync_outbox set '
+        column_count = len(data)
+        where_count = len(where_clause)
+        i = 0
+
+        # set new value
+        for key in data:
+            i += 1
+            query += "{}='{}'".format(key, data[key])
+            if(i < column_count):
+                query += ', '
+
+        # add where clouse
+        query += ' where '
+        i = 0
+        for key in where_clause:
+            i += 1
+            query += "{}='{}'".format(key, where_clause[key])
+            if(i < column_count):
+                query += ' and '
+
+        return self.db.executeCommit(query)

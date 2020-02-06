@@ -8,11 +8,12 @@ import env
 from encryption import AES256
 from DatabaseConnection import DatabaseConnection
 import time
+from outbox import Outbox
 
 uniqueId = env.UNIQUE_ID
 db = DatabaseConnection(env.DB_HOST, env.DB_UNAME,
                         env.DB_PASSWORD, env.DB_NAME)
-
+outbox = Outbox(db)
 # if(len(sys.argv) == 2):
 #     fileName = sys.argv[1]
 # else:
@@ -32,10 +33,11 @@ while True:
     s = receiver.recv_json()
 
     # labeling row as processed
-    updateQuery = """
-        update tb_sync_outbox set is_sent=1, status='sent' where outbox_id = {}
-    """
-    if(db.executeCommit(updateQuery.format(s['msg_id']))):
+    # updateQuery = """
+    #     update tb_sync_outbox set is_sent=1, status='sent' where outbox_id = {}
+    # """
+    if(outbox.update(data={'is_sent': 1, 'status': 'sent'},
+                     where_clause={'outbox_id': s['msg_id']})):
         print('sukses')
     else:
         print('gagal')
@@ -45,7 +47,7 @@ while True:
         'data': s['query'],
         'sender_id': uniqueId,
         'timestamp': s['timestamp'],
-        'unix_timestamp': s['unix_timestamp'],
+        'occur_at': s['unix_timestamp'],
         'row_id': s['row_id'],
         'table_name': s['table_name'],
         'msg_id': s['msg_id'],

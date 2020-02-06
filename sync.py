@@ -17,6 +17,7 @@ class Sync:
         self.outbox = Outbox(self.syncDB)
         self.systemlog = SystemLog()
         self.inbox = Inbox(self.syncDB)
+        self.outbox = Outbox(self.syncDB)
 
     def getClient(self):
         sql = "select * from tb_sync_client"
@@ -30,9 +31,14 @@ class Sync:
             rowId = self.syncDB.lastRowId
 
             # set result primary key to table inbox
-            query = "update tb_sync_inbox set result_primary_key = {} where inbox_id = {}"
-            insert = self.syncDB.executeCommit(
-                query.format(rowId, data['inbox_id']))
+            insert = self.inbox.update(data={
+                'result_primary_key': rowId,
+            }, where_clause={
+                'inbox_id': data['inbox_id']
+            })
+            # query = "update tb_sync_inbox set result_primary_key = {} where inbox_id = {}"
+            # insert = self.syncDB.executeCommit(
+            #     query.format(rowId, data['inbox_id']))
 
             # if the msg is sent from master
             # update primary key right away
@@ -117,13 +123,21 @@ class Sync:
         return True
 
     def processAck(self, data):
-        ackQuery = "update tb_sync_outbox set is_arrived=1, status='arrived' where outbox_id = {}".format(
-            data['query'])
-        ack = self.syncDB.executeCommit(ackQuery)
+        ack = self.outbox.update(data={
+            'is_arrived': 1,
+            'status': 'arrived'
+        }, where_clause={
+            'outbox_id': data['query']
+        })
+        # ackQuery = "update tb_sync_outbox set is_arrived=1, status='arrived' where outbox_id = {}".format(
+        #     data['query'])
+        # ack = self.syncDB.executeCommit(ackQuery)
         if(not ack):
-            errorQuery = 'update tb_sync_outbox set is_error=1 where outbox_id = {}'.format(
-                data['msg_id'])
-            self.syncDB.executeCommit(errorQuery)
+            self.outbox.update(data={'is_error': 1}, where_clause={
+                               'outbox_id': data['msg_id']})
+            # errorQuery = 'update tb_sync_outbox set is_error=1 where outbox_id = {}'.format(
+            #     data['msg_id'])
+            # self.syncDB.executeCommit(errorQuery)
 
             self.systemlog.insert("processACK", "Gagal update ACK ID#{} ERROR: {}".format(
                 data['inbox_id'], self.syncDB.getLastCommitError()['msg']))
@@ -140,9 +154,11 @@ class Sync:
         return data
 
     def setAsProcessed(self, id):
-        query = 'update tb_sync_inbox set is_process=1 where inbox_id = {}'.format(
-            id)
-        print(self.syncDB.executeCommit(query))
+        set = self.inbox.update(
+            data={'is_process': 1}, where_clause={'inbox_id': id})
+        # query = 'update tb_sync_inbox set is_process=1 where inbox_id = {}'.format(
+        #     id)
+        print(set)
 
     def reply(self, code, msg):
         return True

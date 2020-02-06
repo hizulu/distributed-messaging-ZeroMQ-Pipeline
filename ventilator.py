@@ -10,6 +10,7 @@ from DatabaseConnection import DatabaseConnection
 from systemlog import SystemLog
 import hashlib
 import sys
+from outbox import Outbox
 
 
 class Ventilator:
@@ -30,6 +31,7 @@ class Ventilator:
         self.db = DatabaseConnection(
             env.DB_HOST, env.DB_UNAME, env.DB_PASSWORD, env.DB_NAME)
         self.syslog = SystemLog()
+        self.outbox = Outbox(self.db)
     # ///////////////////////////////////////////
 
     def setWorker(self, numberOfWorker):
@@ -57,12 +59,12 @@ class Ventilator:
                     # mengecek pesan ins valid menggunakan
                     # PK, client_unique_id dan nama tabel
                     # sistem tidak akan mengirim data yang sama balik lagi ke   pengirimnya
-                    isInsideInboxQuery = "select * from tb_sync_inbox where client_unique_id={} and result_primary_key = {} and table_name = '{}' and msg_type='{}' and is_process = 1".format(
-                        item['client_unique_id'], item['row_id'], item['table_name'], item['msg_type'])
+                    isInsideInboxQuery = "select * from tb_sync_inbox where client_unique_id={} and result_primary_key = {} and table_name = '{}' and msg_type='{}' first_time_occur_at='{}'".format(
+                        item['client_unique_id'], item['row_id'], item['table_name'], item['msg_type'], item['first_time_occur_at'])
 
                 elif(item['msg_type'] == 'UPD'):
-                    isInsideInboxQuery = "select * from tb_sync_inbox where client_unique_id={} and row_id = {} and table_name = '{}' and msg_type='UPD' and md5(query) = '{}'".format(
-                        item['client_unique_id'], item['row_id'], item['table_name'], hashlib.md5(item['query'].encode()).hexdigest(), item['unix_timestamp_sync'])
+                    isInsideInboxQuery = "select * from tb_sync_inbox where client_unique_id={} and row_id = {} and table_name = '{}' and msg_type='UPD' and md5(query) = '{}' and first_time_occur_at='{}'".format(
+                        item['client_unique_id'], item['row_id'], item['table_name'], hashlib.md5(item['query'].encode()).hexdigest(), item['unix_timestamp_sync'], item['first_time_occur_at'])
 
                 inbox = self.db.executeFetchAll(
                     isInsideInboxQuery)
@@ -93,15 +95,17 @@ class Ventilator:
                     'row_id': item['row_id'],
                     'table_name': item['table_name'],
                     'msg_id': item['outbox_id'],
-                    'unix_timestamp': item['unix_timestamp'],
+                    'occur_at': item['unix_timestamp'],
                     'query': item['query'],
                     'timestamp': item['created_at'].strftime("%Y-%m-%d, %H:%M:%S")
                 }
 
                 self.sender.send_json(packet)
             else:
-                query = "update tb_sync_outbox set status='canceled' where outbox_id = {}".format(
-                    item['outbox_id'])
+                self.outbox.update(data={'status': 'calceled'}, where_clause={
+                                   'outbox_id': item['outbox_id']})
+                # query = "update tb_sync_outbox set status='canceled' where outbox_id = {}".format(
+                #     item['outbox_id'])
 
-                self.db.executeCommit(query)
+                # self.db.executeCommit(query)
             # self.sender.send_string(json.dumps(encryptedPacket))
