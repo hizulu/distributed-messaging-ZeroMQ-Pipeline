@@ -44,7 +44,7 @@ while True:
 
     enc = AES256()
     jsonPacket = {
-        'data': s['query'],
+        'query': s['query'],
         'sender_id': uniqueId,
         'timestamp': s['timestamp'],
         'occur_at': s['occur_at'],
