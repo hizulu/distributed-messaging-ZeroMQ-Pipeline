@@ -23,9 +23,9 @@ CREATE TABLE `tb_buku` (
   `isbn` varchar(50) DEFAULT NULL,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `timestamp_sync` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `last_action_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`buku_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2015 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=2058 DEFAULT CHARSET=utf8;
 
 /*Table structure for table `tb_sync_changelog` */
 
@@ -35,14 +35,14 @@ CREATE TABLE `tb_sync_changelog` (
   `log_id` bigint(20) NOT NULL AUTO_INCREMENT,
   `row_id` int(1) DEFAULT NULL COMMENT 'primary key of the table',
   `table` varchar(100) DEFAULT NULL,
-  `query` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci,
+  `query` text,
   `type` varchar(5) DEFAULT NULL,
   `is_proceed` tinyint(4) DEFAULT '0',
-  `unix_timestamp` bigint(20) DEFAULT NULL,
-  `unix_timestamp_sync` bigint(20) DEFAULT NULL COMMENT 'time the msg created for the first time',
+  `occur_at` bigint(20) DEFAULT NULL,
+  `first_time_occur_at` bigint(20) DEFAULT NULL COMMENT 'time the msg created for the first time',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`log_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2015 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=2055 DEFAULT CHARSET=utf8;
 
 /*Table structure for table `tb_sync_client` */
 
@@ -56,7 +56,7 @@ CREATE TABLE `tb_sync_client` (
   `client_ip` varchar(20) DEFAULT NULL,
   `client_port` int(11) DEFAULT NULL,
   PRIMARY KEY (`client_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8;
 
 /*Table structure for table `tb_sync_errors` */
 
@@ -64,7 +64,7 @@ DROP TABLE IF EXISTS `tb_sync_errors`;
 
 CREATE TABLE `tb_sync_errors` (
   `error_id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `error_msg` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci,
+  `error_msg` text,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`error_id`)
@@ -80,16 +80,17 @@ CREATE TABLE `tb_sync_inbox` (
   `table_name` varchar(255) DEFAULT NULL,
   `msg_type` enum('INS','UPD','DEL','ACK','PRI') DEFAULT NULL,
   `msg_id` int(11) DEFAULT NULL,
-  `query` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci,
+  `query` text,
   `client_unique_id` int(11) DEFAULT NULL,
   `master_status` tinyint(4) DEFAULT '0',
   `is_process` tinyint(4) DEFAULT '0',
   `result_primary_key` int(11) DEFAULT '0' COMMENT 'primary key after process the query, due to differential PK between host',
-  `unix_timestamp` bigint(20) DEFAULT NULL,
+  `first_time_occur_at` bigint(20) DEFAULT NULL,
+  `occur_at` bigint(20) DEFAULT NULL,
   `created_at` datetime DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`inbox_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=736 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=758 DEFAULT CHARSET=utf8;
 
 /*Table structure for table `tb_sync_log` */
 
@@ -98,7 +99,7 @@ DROP TABLE IF EXISTS `tb_sync_log`;
 CREATE TABLE `tb_sync_log` (
   `log_id` bigint(20) NOT NULL AUTO_INCREMENT,
   `log_function` varchar(255) DEFAULT NULL,
-  `log_msg` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci,
+  `log_msg` text,
   PRIMARY KEY (`log_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -125,18 +126,18 @@ CREATE TABLE `tb_sync_outbox` (
   `table_name` varchar(255) DEFAULT NULL,
   `msg_type` varchar(5) DEFAULT NULL,
   `msg_id` int(11) DEFAULT NULL COMMENT 'outbox_id from local',
-  `query` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci,
+  `query` text,
   `client_unique_id` int(11) DEFAULT NULL COMMENT 'client_unique_id',
   `is_sent` tinyint(4) DEFAULT '0',
   `is_arrived` tinyint(4) DEFAULT '0',
   `is_error` tinyint(4) DEFAULT '0',
   `status` enum('waiting','sent','arrived','canceled','retry') DEFAULT 'waiting',
-  `unix_timestamp_sync` bigint(20) DEFAULT NULL,
-  `unix_timestamp` bigint(20) DEFAULT NULL,
+  `first_time_occur_at` bigint(20) DEFAULT NULL,
+  `occur_at` bigint(20) DEFAULT NULL,
   `created_at` datetime DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`outbox_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2631 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=2662 DEFAULT CHARSET=utf8;
 
 /*Table structure for table `tb_sync_setting` */
 
@@ -155,11 +156,66 @@ DROP TABLE IF EXISTS `tb_sync_synchronization`;
 
 CREATE TABLE `tb_sync_synchronization` (
   `sync_id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `query` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci,
+  `query` text,
   `type` tinyint(4) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`sync_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+/* Trigger structure for table `tb_buku` */
+
+DELIMITER $$
+
+/*!50003 DROP TRIGGER*//*!50032 IF EXISTS */ /*!50003 `after_insert_buku` */$$
+
+/*!50003 CREATE */ /*!50017 DEFINER = 'rama'@'%' */ /*!50003 TRIGGER `after_insert_buku` AFTER INSERT ON `tb_buku` FOR EACH ROW BEGIN
+	declare qry text;
+	declare tb varchar(100);
+
+	set qry := concat("insert into tb_buku(nama_buku, jenisbuku_id, isbn, created_at, updated_at, last_action_at) values(", "'", new.nama_buku, "',", new.jenisbuku_id, ",'", new.isbn, "','", new.created_at, "','", new.updated_at, "','", new.last_action_at, "')");
+	set tb := "tb_buku";
+	
+	
+	insert into `tb_sync_changelog`(`query`, `table`, `type`, row_id, occur_at, first_time_occur_at) values(qry, tb, 'INS', new.buku_id, unix_timestamp(), unix_timestamp(new.last_action_at));
+    END */$$
+
+
+DELIMITER ;
+
+/* Trigger structure for table `tb_sync_changelog` */
+
+DELIMITER $$
+
+/*!50003 DROP TRIGGER*//*!50032 IF EXISTS */ /*!50003 `after_insert_changelog` */$$
+
+/*!50003 CREATE */ /*!50017 DEFINER = 'rama'@'%' */ /*!50003 TRIGGER `after_insert_changelog` AFTER INSERT ON `tb_sync_changelog` FOR EACH ROW BEGIN
+	
+	declare finished integer default 0;
+	declare id integer(11);
+	
+	declare curClient cursor for
+		select client_unique_id from tb_sync_client;
+	
+	declare continue handler for not found set finished = 1;
+	
+	open curClient;
+	
+	getClient: loop
+		fetch curClient into id;
+		if finished = 1 then
+			leave getClient;
+		end if;
+		
+		insert into tb_sync_outbox(row_id, table_name, `query`, msg_type, `client_unique_id`, created_at, updated_at, occur_at, first_time_occur_at)
+		values(new.row_id, new.table, new.query, new.type, id, new.created_at, now(), new.occur_at, unix_timestamp(new.first_time_occur_at));
+	end loop getClient;
+	
+	close curClient;
+	
+    END */$$
+
+
+DELIMITER ;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
