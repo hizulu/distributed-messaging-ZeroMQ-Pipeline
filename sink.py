@@ -55,7 +55,7 @@ while True:
         select ifnull(count(*), 0) as total from tb_sync_inbox where msg_id = {} and client_unique_id = {}
     """
     checkMsg = sink.db.executeFetchOne(autoconnect=False, sql=checkMsgQuery.format(
-        s['data']['msg_id'], s['data']['sender_id']))
+        s['data']['msg_id'], s['data']['client_unique_id']))
     if(checkMsg['execute_status']):
         if(checkMsg['data']['total'] <= 0):
             accepted = True
@@ -84,7 +84,7 @@ while True:
                 'table_name': data['table_name'],
                 'msg_type': 'ACK',
                 'query': data['msg_id'],
-                'client_unique_id': data['sender_id'],
+                'client_unique_id': data['client_unique_id'],
             })
 
     sink.db.close()
