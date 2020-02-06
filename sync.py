@@ -50,7 +50,6 @@ class Sync:
                     'msg_type': 'PRI',
                     'msg_id': 0,
                     'query': data['row_id'],
-                    'result_primary_key': data['row_id'],
                     'client_unique_id': 0,
                     'master_status': 0
                 }

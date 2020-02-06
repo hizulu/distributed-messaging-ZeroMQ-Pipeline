@@ -27,7 +27,7 @@ class Inbox:
             values("{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}")
         """
 
-        return self.db.executeCommit(sql=sql.format(row_id, table_name, msg_type, msg_id, query, client_unique_id, master_status, unix_timestamp, first_time_occur_at, dttime, dttime, result_primary_key))
+        return self.db.executeCommit(sql=sql.format(row_id, table_name, msg_type, msg_id, query, client_unique_id, master_status, unix_timestamp, first_time_occur_at, dttime, dttime))
 
     def update(self, data, where_clause):
         query = 'update tb_sync_inbox set '
