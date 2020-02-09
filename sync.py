@@ -73,6 +73,7 @@ class Sync:
     # primary key yang digunakan adalah primary key dari master
     def processPrimaryKey(self, data):
         # mencari nama kolom primary key
+        print(db_name)
         db_name = env.DB_NAME
         sql = """
             select COLUMN_NAME from information_schema.COLUMNS
@@ -170,3 +171,4 @@ while True:
             time.sleep(1)
     else:
         print('Error')
+        sys.exit()

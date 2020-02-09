@@ -6,7 +6,7 @@ class SystemLog:
 
     def __init__(self):
         self.db = DatabaseConnection(
-            env.DB_HOST, env.DB_UNAME, env.DB_PASSWORD, 'db_ta1')
+            env.DB_HOST, env.DB_UNAME, env.DB_PASSWORD, env.DB_NAME)
 
     def insert(self, function_name, msg):
         sql = """
