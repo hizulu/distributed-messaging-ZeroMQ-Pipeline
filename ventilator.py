@@ -100,7 +100,8 @@ class Ventilator:
                     'query': item['query'],
                     'timestamp': item['created_at'].strftime("%Y-%m-%d, %H:%M:%S")
                 }
-
+                self.outbox.update(data={'is_sent': 1, 'status': 'sent'}, where_clause={
+                                   'outbox_id': item['outbox_id']})
                 self.sender.send_json(packet)
             else:
                 self.outbox.update(data={'status': 'calceled'}, where_clause={

@@ -19,4 +19,4 @@ while True:
             time.sleep(1)
     else:
         print('Error retrieving data')
-    sys.exit()
+    # sys.exit()

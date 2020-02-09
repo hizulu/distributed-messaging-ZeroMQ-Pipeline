@@ -36,9 +36,6 @@ class Sync:
             }, where_clause={
                 'inbox_id': data['inbox_id']
             })
-            # query = "update tb_sync_inbox set result_primary_key = {} where inbox_id = {}"
-            # insert = self.syncDB.executeCommit(
-            #     query.format(rowId, data['inbox_id']))
 
             # if the msg is sent from master
             # update primary key right away
@@ -55,35 +52,18 @@ class Sync:
                 }
                 if(not self.inbox.insert(inbox)):
                     print(self.syncDB.getLastCommitError())
-            # elif(data['master_status'] == 0 and env.MASTER_NODE):
-            #     # send to other client if avaiable
-            #     clients = self.getClient()
-            #     for client in clients['data']:
-            #         # insert every msg to client exept
-            #         # the origin of the msg
-            #         if(client['client_unique_id'] == data['client_unique_id']):
-            #             continue
-
-            #         outboxData = {
-            #             'row_id': rowId,
-            #             'table_name': data['table_name'],
-            #             'msg_type': 'INS',
-            #             'msg_id': 0,
-            #             'query': data['query'],
-            #             'client_unique_id': client['client_unique_id']
-            #         }
-
-            #         self.outbox.insert(outboxData)
-            # send ACK to the sender
-            msg = {
-                'row_id': rowId,  # local row id
-                'table_name': data['table_name'],
-                'msg_type': 'ACK',
-                'msg_id': data['msg_id'],  # receiver outbox_id
-                'client_unique_id': data['client_unique_id'],
-                'query': ''
-            }
-            self.outbox.insert(msg)
+            elif(env.MASTER_NODE):
+                # master akan mengirim PK hasil insert ke
+                # slave pengirim pesan insert
+                msg = {
+                    'row_id': data['row_id'],  # local row id
+                    'table_name': data['table_name'],
+                    'msg_type': 'PRI',
+                    'query': rowId,  # receiver outbox_id
+                    'client_unique_id': data['client_unique_id'],
+                    'msg_id': 0,
+                }
+                self.outbox.insert(msg)
             self.setAsProcessed(data['inbox_id'])
         else:
             print('error')
@@ -184,8 +164,8 @@ while True:
                 elif(msgType == "PRI"):
                     sync.processPrimaryKey(item)
                 else:
-                    sync.db.insError("Msg type not found for id=" +
-                                     str(item['inbox_id']))
+                    sync.syncDB.insError("Msg type not found for id=" +
+                                         str(item['inbox_id']))
         else:
             time.sleep(1)
     else:

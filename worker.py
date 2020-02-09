@@ -36,12 +36,12 @@ while True:
     # updateQuery = """
     #     update tb_sync_outbox set is_sent=1, status='sent' where outbox_id = {}
     # """
-    if(outbox.update(data={'is_sent': 1, 'status': 'sent'},
-                     where_clause={'outbox_id': s['msg_id']})):
-        print('sukses')
-    else:
-        print('gagal')
-
+    # if(outbox.update(data={'is_sent': 1, 'status': 'sent'},
+    #                  where_clause={'outbox_id': s['msg_id']})):
+    #     print('sukses')
+    # else:
+    #     print('gagal')
+    print('Sending: {}'.format(s['msg_id']))
     enc = AES256()
     jsonPacket = {
         'query': s['query'],
