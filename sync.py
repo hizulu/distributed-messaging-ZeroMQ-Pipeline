@@ -23,6 +23,28 @@ class Sync:
         sql = "select * from tb_sync_client"
         return self.syncDB.executeFetchAll(sql)
 
+    def setPriority(self, id, table, priority):
+        db_name = env.DB_NAME
+        sql = """
+            select COLUMN_NAME from information_schema.COLUMNS
+            where TABLE_SCHEMA='{}' and TABLE_NAME='{}'
+            and COLUMN_KEY='PRI'
+        """.format(db_name, table)
+        res = self.syncDB.executeFetchOne(sql)
+        if(res['execute_status']):
+            primary_key = res['data']['COLUMN_NAME']
+            # update primary key
+            sql = "update {} set priority={} where {}={}"
+            update = self.syncDB.executeCommit(
+                sql.format(table, priority, primary_key, id))
+
+            if(update):
+                # update PK success
+                print("Updated Priority")
+            else:
+                self.systemlog.insert(
+                    "Sync.setPriority", json.dumps(self.syncDB.getLastCommitError()))
+
     def processInsert(self, data):
         print('Processing inbox: {}'.format(data['inbox_id']), end=": ")
         insert = self.syncDB.executeCommit(data['query'])
@@ -66,6 +88,8 @@ class Sync:
                 self.outbox.insert(msg)
             self.setAsProcessed(data['inbox_id'])
         else:
+            # set priority menjadi 3
+            self.setPriority(data['inbox_id'], 'tb_sync_inbox', 3)
             print('error')
         return True
 
@@ -73,7 +97,7 @@ class Sync:
     # primary key yang digunakan adalah primary key dari master
     def processPrimaryKey(self, data):
         # mencari nama kolom primary key
-        print(db_name)
+        # print(db_name)
         db_name = env.DB_NAME
         sql = """
             select COLUMN_NAME from information_schema.COLUMNS
@@ -93,6 +117,7 @@ class Sync:
                 print("Updated PK")
                 self.setAsProcessed(data['inbox_id'])
             else:
+                self.setPriority(data['inbox_id'], 'tb_sync_inbox', 3)
                 self.systemlog.insert(
                     "Sync.processPrimaryKey", json.dumps(self.syncDB.getLastCommitError()))
 
@@ -113,6 +138,7 @@ class Sync:
         #     data['query'])
         # ack = self.syncDB.executeCommit(ackQuery)
         if(not ack):
+            self.setPriority(data['inbox_id'], 'tb_sync_inbox', 3)
             self.outbox.update(data={'is_error': 1}, where_clause={
                                'outbox_id': data['msg_id']})
             # errorQuery = 'update tb_sync_outbox set is_error=1 where outbox_id = {}'.format(
@@ -145,6 +171,7 @@ class Sync:
 
 
 sync = Sync()
+# sync.setPriority(2677, 'tb_sync_outbox', 2)
 # sync.db.insError("test")
 # sys.exit()
 while True:

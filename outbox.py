@@ -17,6 +17,7 @@ class Outbox:
         # msg_id is receiver outbox_id for this msg
         msg_id = data['msg_id']
         string_query = data['query']
+        priority = data['priority'] if 'priority' in data else 2
         # client_uid = receiver id
         client_uid = data['client_unique_id']
         unix_timestamp = data['occur_at'] if 'occur_at' in data else int(
@@ -25,9 +26,9 @@ class Outbox:
         dttime = datetime.datetime.utcfromtimestamp(
             unix_timestamp).strftime('%Y-%m-%d %H:%M:%S')
         query = """
-            insert into tb_sync_outbox(row_id, table_name, msg_type, msg_id, query, client_unique_id, occur_at, first_time_occur_at, created_at, updated_at)
-            values({}, "{}", "{}", {}, "{}", {}, {}, {}, "{}", "{}")
-        """.format(rowId, table_name, msg_type, msg_id, string_query, client_uid, unix_timestamp, first_time_occur_at, dttime, dttime)
+            insert into tb_sync_outbox(row_id, table_name, msg_type, msg_id, query, client_unique_id, occur_at, first_time_occur_at, created_at, updated_at, priority)
+            values({}, "{}", "{}", {}, "{}", {}, {}, {}, "{}", "{}", {})
+        """.format(rowId, table_name, msg_type, msg_id, string_query, client_uid, unix_timestamp, first_time_occur_at, dttime, dttime, priority)
 
         return self.db.executeCommit(sql=query)
 

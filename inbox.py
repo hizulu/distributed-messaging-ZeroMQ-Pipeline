@@ -14,6 +14,7 @@ class Inbox:
         msg_id = data['msg_id']
         query = data['query']
         client_unique_id = data['client_unique_id']
+        priority = data['priority'] if 'priority' in data else 2
         # result_primary_key = data['result_primary_key'] if 'result_primary_key' in data else 0
         master_status = data['master_status']
         unix_timestamp = data['occur_at'] if 'occur_at' in data else int(
@@ -23,11 +24,11 @@ class Inbox:
         dttime = datetime.datetime.utcfromtimestamp(
             unix_timestamp).strftime('%Y-%m-%d %H:%M:%S')
         sql = """
-            insert into tb_sync_inbox(row_id, table_name, msg_type, msg_id, query, client_unique_id, master_status, occur_at, first_time_occur_at, created_at, updated_at)
-            values("{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}")
+            insert into tb_sync_inbox(row_id, table_name, msg_type, msg_id, query, client_unique_id, master_status, occur_at, first_time_occur_at, created_at, updated_at, priority)
+            values("{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}", "{}")
         """
 
-        return self.db.executeCommit(sql=sql.format(row_id, table_name, msg_type, msg_id, query, client_unique_id, master_status, unix_timestamp, first_time_occur_at, dttime, dttime))
+        return self.db.executeCommit(sql=sql.format(row_id, table_name, msg_type, msg_id, query, client_unique_id, master_status, unix_timestamp, first_time_occur_at, dttime, dttime, priority))
 
     def update(self, data, where_clause):
         query = 'update tb_sync_inbox set '
