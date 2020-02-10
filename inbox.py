@@ -19,7 +19,7 @@ class Inbox:
         master_status = data['master_status']
         unix_timestamp = data['occur_at'] if 'occur_at' in data else int(
             time.time())
-        first_time_occur_at = data['first_time_occur_at'] if 'first_time_occur_at' in data else datetime.now(
+        first_time_occur_at = data['first_time_occur_at'] if 'first_time_occur_at' in data else datetime.datetime.now(
         ).strftime('%Y-%m-%d %H:%M:%S')
         dttime = datetime.datetime.utcfromtimestamp(
             unix_timestamp).strftime('%Y-%m-%d %H:%M:%S')
