@@ -104,7 +104,7 @@ class Ventilator:
                                    'outbox_id': item['outbox_id']})
                 self.sender.send_json(packet)
             else:
-                self.outbox.update(data={'status': 'calceled'}, where_clause={
+                self.outbox.update(data={'status': 'canceled'}, where_clause={
                                    'outbox_id': item['outbox_id']})
                 # query = "update tb_sync_outbox set status='canceled' where outbox_id = {}".format(
                 #     item['outbox_id'])
