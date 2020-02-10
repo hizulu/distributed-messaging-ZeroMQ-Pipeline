@@ -96,7 +96,7 @@ class Ventilator:
                     'table_name': item['table_name'],
                     'msg_id': item['outbox_id'],
                     'occur_at': item['occur_at'],
-                    'first_time_occur_at': item['first_time_occur_at'],
+                    'first_time_occur_at': item['first_time_occur_at'].strftime("%Y-%m-%d, %H:%M:%S"),
                     'query': item['query'],
                     'timestamp': item['created_at'].strftime("%Y-%m-%d, %H:%M:%S")
                 }
