@@ -28,7 +28,7 @@ class Outbox:
             unix_timestamp).strftime('%Y-%m-%d %H:%M:%S')
         query = """
             insert into tb_sync_outbox(row_id, table_name, msg_type, msg_id, query, client_unique_id, occur_at, first_time_occur_at, created_at, updated_at, priority)
-            values({}, "{}", "{}", {}, "{}", {}, {}, {}, "{}", "{}", {})
+            values("{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}")
         """.format(rowId, table_name, msg_type, msg_id, string_query, client_uid, unix_timestamp, first_time_occur_at, dttime, dttime, priority)
 
         return self.db.executeCommit(sql=query)
