@@ -44,7 +44,7 @@ sink = Sink()
 while True:
     s = sink.recv_json()
     print("[{}] -> #{}".format(datetime.datetime.now().strftime(
-        "%d-%m-%Y %H:%M:%S"). s['data']['msg_id']), end=" ")
+        "%d-%m-%Y %H:%M:%S"), s['data']['msg_id']), end=" ")
     # authenticate message
     # if(not sink.auth()):
     #     continue

@@ -196,7 +196,7 @@ while True:
         if(inbox['data']):
             for item in inbox['data']:
                 print(
-                    "[{}] -> #{}".format(datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S"). item['msg_id']))
+                    "[{}] -> #{}".format(datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S"), item['msg_id']))
                 msgType = item['msg_type']
                 if(msgType == 'INS'):
                     sync.processInsert(item)

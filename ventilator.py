@@ -11,6 +11,7 @@ from systemlog import SystemLog
 import hashlib
 import sys
 from outbox import Outbox
+import datetime
 
 
 class Ventilator:
@@ -54,7 +55,7 @@ class Ventilator:
             # pengecekan dilakukan agar sebuah pesan tidak kembali ke pengirimnya
             # atau terjadi looping data terus menerus
             print("[{}] -> #{} ->".format(
-                datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S"). item['outbox_id']), end=" ")
+                datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S"), item['outbox_id']), end=" ")
             isValid = False
             if(item['msg_type'] == 'INS' or item['msg_type'] == 'DEL' or item['msg_type'] == 'UPD'):
                 if(item['msg_type'] == 'INS' or item['msg_type'] == 'DEL'):
