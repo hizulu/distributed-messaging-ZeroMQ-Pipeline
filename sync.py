@@ -133,9 +133,7 @@ class Sync:
                         'inbox_id': data['inbox_id']
                     })
                 else:
-
-
-self.setPriority(data['inbox_id'], 'tb_sync_inbox', 3)
+                    self.setPriority(data['inbox_id'], 'tb_sync_inbox', 3)
                 self.systemlog.insert(
                     "Sync.processPrimaryKey", json.dumps(self.syncDB.getLastCommitError()))
 
@@ -197,7 +195,8 @@ while True:
     if(inbox['execute_status']):
         if(inbox['data']):
             for item in inbox['data']:
-                print("[{}] -> #{}".format(datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S"). item['msg_id']))
+                print(
+                    "[{}] -> #{}".format(datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S"). item['msg_id']))
                 msgType = item['msg_type']
                 if(msgType == 'INS'):
                     sync.processInsert(item)
