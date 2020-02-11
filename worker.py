@@ -43,7 +43,7 @@ while True:
     # else:
     #     print('gagal')
     print("[{}] -> #{}".format(datetime.datetime.now().strftime(
-        "%d-%m-%Y %H:%M:%S"). item['msg_id']))
+        "%d-%m-%Y %H:%M:%S"), s['msg_id']))
     enc = AES256()
     jsonPacket = {
         'query': s['query'],
