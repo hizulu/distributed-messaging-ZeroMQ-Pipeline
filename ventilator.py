@@ -60,11 +60,11 @@ class Ventilator:
                     # PK, client_unique_id dan nama tabel
                     # sistem tidak akan mengirim data yang sama balik lagi ke   pengirimnya
                     isInsideInboxQuery = "select * from tb_sync_inbox where client_unique_id={} and result_primary_key = {} and table_name = '{}' and msg_type='{}' and first_time_occur_at='{}'".format(
-                        item['client_unique_id'], item['row_id'], item['table_name'], item['msg_type'], item['first_time_occur_at'])
+                        item['client_unique_id'], item['row_id'], item['table_name'], item['msg_type'], item['first_time_occur_at'].strftime("%Y-%m-%d %H:%M:%S"))
 
                 elif(item['msg_type'] == 'UPD'):
                     isInsideInboxQuery = "select * from tb_sync_inbox where client_unique_id={} and row_id = {} and table_name = '{}' and msg_type='UPD' and md5(query) = '{}' and first_time_occur_at='{}'".format(
-                        item['client_unique_id'], item['row_id'], item['table_name'], hashlib.md5(item['query'].encode()).hexdigest(), item['unix_timestamp_sync'], item['first_time_occur_at'])
+                        item['client_unique_id'], item['row_id'], item['table_name'], hashlib.md5(item['query'].encode()).hexdigest(), item['unix_timestamp_sync'], item['first_time_occur_at'].strftime("%Y-%m-%d %H:%M:%S"))
 
                 inbox = self.db.executeFetchAll(
                     isInsideInboxQuery)

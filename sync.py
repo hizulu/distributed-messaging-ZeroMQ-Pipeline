@@ -85,7 +85,10 @@ class Sync:
                     'client_unique_id': data['client_unique_id'],
                     'msg_id': 0,
                 }
-                self.outbox.insert(msg)
+                tes = self.outbox.insert(msg)
+                print(tes)
+                if(not tes):
+                    print(self.syncDB.getLastCommitError())
             self.setAsProcessed(data['inbox_id'])
         else:
             # set priority menjadi 3
@@ -117,7 +120,19 @@ class Sync:
                 print("Updated PK")
                 self.setAsProcessed(data['inbox_id'])
             else:
-                self.setPriority(data['inbox_id'], 'tb_sync_inbox', 3)
+                # update primary key to 0
+                # as temp
+                update = self.syncDB.executeCommit(sql.format(
+                    data['table_name'], primary_key, 0, primary_key, data['row_id']))
+                if(update):
+                    self.inbox.update(data={
+                        'priority': 3,
+                        'row_id': 0,
+                    }, where_clause={
+                        'inbox_id': data['inbox_id']
+                    })
+                else:
+                    self.setPriority(data['inbox_id'], 'tb_sync_inbox', 3)
                 self.systemlog.insert(
                     "Sync.processPrimaryKey", json.dumps(self.syncDB.getLastCommitError()))
 
