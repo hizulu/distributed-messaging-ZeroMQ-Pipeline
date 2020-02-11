@@ -43,7 +43,8 @@ class Sink:
 sink = Sink()
 while True:
     s = sink.recv_json()
-    print(s)
+    print("[{}] -> #{}".format(datetime.datetime.now().strftime(
+        "%d-%m-%Y %H:%M:%S"). s['data']['msg_id']), end=" ")
     # authenticate message
     # if(not sink.auth()):
     #     continue
@@ -73,7 +74,7 @@ while True:
 
         # insert = sink.db.executeCommit(autoconnect=False, sql=sql.format(
         #     s['data']['row_id'], s['data']['table_name'], s['data']['msg_id'], s['data']['data'], s['data']['msg_type'], s['data']['sender_id'], s['data']['master_status'], s['data']['unix_timestamp']))
-        print(insert)
+        print('accepted')
 
         # send back which message is received using worker
         # only reply non-ACK msg
@@ -87,5 +88,6 @@ while True:
                 'client_unique_id': data['client_unique_id'],
                 'msg_id': 0
             })
-
-    print("end time: {}".format(int(round(time.time() * 1000))))
+    else:
+        print('rejected')
+    # print("end time: {}".format(int(round(time.time() * 1000))))

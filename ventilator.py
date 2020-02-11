@@ -53,18 +53,20 @@ class Ventilator:
             # proses mengecek pesan yang valid
             # pengecekan dilakukan agar sebuah pesan tidak kembali ke pengirimnya
             # atau terjadi looping data terus menerus
+            print("[{}] -> #{} ->".format(
+                datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S"). item['outbox_id']), end=" ")
             isValid = False
             if(item['msg_type'] == 'INS' or item['msg_type'] == 'DEL' or item['msg_type'] == 'UPD'):
                 if(item['msg_type'] == 'INS' or item['msg_type'] == 'DEL'):
                     # mengecek pesan ins valid menggunakan
                     # PK, client_unique_id dan nama tabel
                     # sistem tidak akan mengirim data yang sama balik lagi ke   pengirimnya
-                    isInsideInboxQuery = "select * from tb_sync_inbox where client_unique_id={} and result_primary_key = {} and table_name = '{}' and msg_type='{}' and first_time_occur_at='{}'".format(
-                        item['client_unique_id'], item['row_id'], item['table_name'], item['msg_type'], item['first_time_occur_at'].strftime("%Y-%m-%d %H:%M:%S"))
+                    isInsideInboxQuery = "select * from tb_sync_inbox where client_unique_id={} and result_primary_key = {} and table_name = '{}' and msg_type='{}'".format(
+                        item['client_unique_id'], item['row_id'], item['table_name'], item['msg_type'])
 
                 elif(item['msg_type'] == 'UPD'):
-                    isInsideInboxQuery = "select * from tb_sync_inbox where client_unique_id={} and row_id = {} and table_name = '{}' and msg_type='UPD' and md5(query) = '{}' and first_time_occur_at='{}'".format(
-                        item['client_unique_id'], item['row_id'], item['table_name'], hashlib.md5(item['query'].encode()).hexdigest(), item['unix_timestamp_sync'], item['first_time_occur_at'].strftime("%Y-%m-%d %H:%M:%S"))
+                    isInsideInboxQuery = "select * from tb_sync_inbox where client_unique_id={} and row_id = {} and table_name = '{}' and msg_type='UPD' and md5(query) = '{}'".format(
+                        item['client_unique_id'], item['row_id'], item['table_name'], hashlib.md5(item['query'].encode()).hexdigest(), item['unix_timestamp_sync'])
 
                 inbox = self.db.executeFetchAll(
                     isInsideInboxQuery)
@@ -85,6 +87,7 @@ class Ventilator:
             # print(isValid)
             # sys.exit()
             if(isValid):
+                print('S')
                 packet = {
                     'client_id': item['client_unique_id'],
                     'client_key': item['client_key'],
@@ -104,6 +107,7 @@ class Ventilator:
                                    'outbox_id': item['outbox_id']})
                 self.sender.send_json(packet)
             else:
+                print('E')
                 self.outbox.update(data={'status': 'canceled'}, where_clause={
                                    'outbox_id': item['outbox_id']})
                 # query = "update tb_sync_outbox set status='canceled' where outbox_id = {}".format(

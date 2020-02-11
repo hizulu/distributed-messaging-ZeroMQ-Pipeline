@@ -5,9 +5,12 @@ import json
 import sys
 import env
 import time
+import datetime
 
 log = Log()
 ven = Ventilator()
+print("[{}] Service menyala".format(
+    datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S")))
 while True:
     task = log.getUnproceessLog()
     if(task['execute_status']):

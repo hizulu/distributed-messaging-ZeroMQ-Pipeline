@@ -9,6 +9,7 @@ from encryption import AES256
 from DatabaseConnection import DatabaseConnection
 import time
 from outbox import Outbox
+import datetime
 
 uniqueId = env.UNIQUE_ID
 db = DatabaseConnection(env.DB_HOST, env.DB_UNAME,
@@ -41,7 +42,8 @@ while True:
     #     print('sukses')
     # else:
     #     print('gagal')
-    print('Sending: {}'.format(s['msg_id']))
+    print("[{}] -> #{}".format(datetime.datetime.now().strftime(
+        "%d-%m-%Y %H:%M:%S"). item['msg_id']))
     enc = AES256()
     jsonPacket = {
         'query': s['query'],
