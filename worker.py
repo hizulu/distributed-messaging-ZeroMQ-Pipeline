@@ -50,6 +50,7 @@ while True:
         'client_unique_id': uniqueId,
         'timestamp': s['timestamp'],
         'occur_at': s['occur_at'],
+        'sync_token': s['sync_token'],
         'first_time_occur_at': s['first_time_occur_at'],
         'row_id': s['row_id'],
         'table_name': s['table_name'],

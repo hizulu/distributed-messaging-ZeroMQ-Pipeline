@@ -14,6 +14,7 @@ class Outbox:
         rowId = data['row_id']
         table_name = data['table_name']
         msg_type = data['msg_type']
+        sync_token = data['sync_token'] if 'sync_token' in data else '(NULL)'
         # msg_id is receiver outbox_id for this msg
         msg_id = data['msg_id']
         string_query = data['query']
@@ -27,9 +28,9 @@ class Outbox:
         dttime = datetime.datetime.utcfromtimestamp(
             unix_timestamp).strftime('%Y-%m-%d %H:%M:%S')
         query = """
-            insert into tb_sync_outbox(row_id, table_name, msg_type, msg_id, query, client_unique_id, occur_at, first_time_occur_at, created_at, updated_at, priority)
-            values("{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}")
-        """.format(rowId, table_name, msg_type, msg_id, string_query, client_uid, unix_timestamp, first_time_occur_at, dttime, dttime, priority)
+            insert into tb_sync_outbox(row_id, table_name, msg_type, msg_id, query, client_unique_id, occur_at, first_time_occur_at, created_at, updated_at, priority, sync_token)
+            values("{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}")
+        """.format(rowId, table_name, msg_type, msg_id, string_query, client_uid, unix_timestamp, first_time_occur_at, dttime, dttime, priority, sync_token)
 
         return self.db.executeCommit(sql=query)
 
