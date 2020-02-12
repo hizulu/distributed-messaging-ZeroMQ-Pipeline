@@ -62,7 +62,7 @@ class Ventilator:
                     # mengecek pesan ins valid menggunakan
                     # PK, client_unique_id dan nama tabel
                     # sistem tidak akan mengirim data yang sama balik lagi ke   pengirimnya
-                    isInsideInboxQuery = "select * from tb_sync_inbox where client_unique_id={} and sync_token = {} and table_name = '{}' and msg_type='{}'".format(
+                    isInsideInboxQuery = "select * from tb_sync_inbox where client_unique_id={} and sync_token = '{}' and table_name = '{}' and msg_type='{}'".format(
                         item['client_unique_id'], item['sync_token'], item['table_name'], item['msg_type'])
 
                 elif(item['msg_type'] == 'UPD'):
@@ -75,7 +75,6 @@ class Ventilator:
                 if(inbox['execute_status']):
                     clients = [client['client_unique_id']
                                for client in inbox['data']]
-                    print(client)
                     if(item['client_unique_id'] not in clients):
                         isValid = True
                 else:
@@ -100,7 +99,7 @@ class Ventilator:
                     'msg_id': item['outbox_id'],
                     'occur_at': item['occur_at'],
                     'sync_token': item['sync_token'],
-                    'first_time_occur_at': item['first_time_occur_at'].strftime("%Y-%m-%d %H:%M:%S"),
+                    'first_time_occur_at': item['first_time_occur_at'],
                     'query': item['query'],
                     'timestamp': item['created_at'].strftime("%Y-%m-%d %H:%M:%S")
                 }
