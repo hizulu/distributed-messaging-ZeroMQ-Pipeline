@@ -15,7 +15,6 @@ while True:
     task = log.getUnproceessLog()
     if(task['execute_status']):
         if(task['data']):
-            print("{} Data being send".format(len(task['data'])))
             ven.send(task['data'])
             # sys.exit()
         else:

@@ -54,8 +54,8 @@ class Ventilator:
             # proses mengecek pesan yang valid
             # pengecekan dilakukan agar sebuah pesan tidak kembali ke pengirimnya
             # atau terjadi looping data terus menerus
-            print("[{}] -> #{} ->".format(
-                datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S"), item['outbox_id']), end=" ")
+            print("[{}] -> #{} to {} ->".format(datetime.datetime.now().strftime(
+                "%d-%m-%Y %H:%M:%S"), item['outbox_id'], item['client_unique_id']), end=" ")
             isValid = False
             if(item['msg_type'] == 'INS' or item['msg_type'] == 'DEL' or item['msg_type'] == 'UPD'):
                 if(item['msg_type'] == 'INS' or item['msg_type'] == 'DEL'):
@@ -72,11 +72,10 @@ class Ventilator:
                 inbox = self.db.executeFetchAll(
                     isInsideInboxQuery)
 
-                clients = []
                 if(inbox['execute_status']):
-                    for client in inbox['data']:
-                        clients.append(client['client_unique_id'])
-
+                    clients = [client['client_unique_id']
+                               for client in inbox['data']]
+                    print(clients)
                     if(item['client_unique_id'] not in clients):
                         isValid = True
                 else:
