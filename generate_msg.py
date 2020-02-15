@@ -8,7 +8,7 @@ rowLimit = '200'
 db = DatabaseConnection(env.DB_HOST, env.DB_UNAME,
                         env.DB_PASSWORD, env.DB_NAME)
 
-for i in range(5):
+for i in range(10):
     nama_buku = "H1-{}".format(i+1)
     sql = """
     INSERT INTO tb_buku(`nama_buku`, `jenisbuku_id`, isbn)

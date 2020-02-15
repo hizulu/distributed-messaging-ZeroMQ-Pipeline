@@ -57,6 +57,7 @@ class Ventilator:
             print("[{}] -> #{} to {} ->".format(datetime.datetime.now().strftime(
                 "%d-%m-%Y %H:%M:%S"), item['outbox_id'], item['client_unique_id']), end=" ")
             isValid = False
+            invalidReason = 'None'
             if(item['msg_type'] == 'INS' or item['msg_type'] == 'DEL' or item['msg_type'] == 'UPD'):
                 if(item['msg_type'] == 'INS' or item['msg_type'] == 'DEL'):
                     # mengecek pesan ins valid menggunakan
@@ -75,8 +76,31 @@ class Ventilator:
                 if(inbox['execute_status']):
                     clients = [client['client_unique_id']
                                for client in inbox['data']]
+                    print(clients)
                     if(item['client_unique_id'] not in clients):
                         isValid = True
+
+                    # filter DEL msg type
+                    # jangan kirim pesan DEL jika row yang di DEL belum selesai
+                    if(not env.MASTER_NODE and item['msg_type'] == 'DEL'):
+                        checkPRIQuery = """
+                            select * as total
+                            from tb_sync_inbox where msg_type = 'PRI'
+                            and is_process = 0 and status='waiting'
+                            and table_name = '{}' and row_id = '{}'
+                        """
+                        checkPRIRes = self.db.executeFetchAll(
+                            checkPRIQuery.format(item['table_name'], item['query']))
+
+                        if(checkPRIRes['execute_status']):
+                            if(len(checkPRIRes['data']) > 0):
+                                isValid = False
+                                invalidReason = "PRI not yet process"
+                            else:
+                                isValid = True
+                        else:
+                            isValid = False
+                            invalidReason = "Check PRI fail"
                 else:
                     self.syslog.insert("ventilator-valid-msg",
                                        "Error get data from outbox")
@@ -86,7 +110,7 @@ class Ventilator:
             # print(isValid)
             # sys.exit()
             if(isValid):
-                print('S')
+                print('valid, Reason: {}'.format(invalidReason))
                 packet = {
                     'client_id': item['client_unique_id'],
                     'client_key': item['client_key'],
@@ -107,7 +131,7 @@ class Ventilator:
                                    'outbox_id': item['outbox_id']})
                 self.sender.send_json(packet)
             else:
-                print('E')
+                print('invalid, Reason: {}'.format(invalidReason))
                 self.outbox.update(data={'status': 'canceled'}, where_clause={
                                    'outbox_id': item['outbox_id']})
                 # query = "update tb_sync_outbox set status='canceled' where outbox_id = {}".format(

@@ -24,6 +24,16 @@ class Sync:
         sql = "select * from tb_sync_client"
         return self.syncDB.executeFetchAll(sql)
 
+    def _getPrimaryKeyColumn(self, table):
+        db_name = env.DB_NAME
+        sql = """
+            select COLUMN_NAME from information_schema.COLUMNS
+            where TABLE_SCHEMA='{}' and TABLE_NAME='{}'
+            and COLUMN_KEY='PRI'
+        """.format(db_name, table)
+        res = self.syncDB.executeFetchOne(sql)
+        return res['data']['COLUMN_NAME']
+
     def setPriority(self, id, table, priority):
         db_name = env.DB_NAME
         sql = """
@@ -50,7 +60,7 @@ class Sync:
         print('Processing inbox: {}'.format(data['inbox_id']), end=": ")
         insert = self.syncDB.executeCommit(data['query'])
         if(insert):
-            print('success')
+            print('done')
             rowId = self.syncDB.lastRowId
 
             # set result primary key to table inbox
@@ -94,7 +104,7 @@ class Sync:
         else:
             # set priority menjadi 3
             self.setPriority(data['inbox_id'], 'tb_sync_inbox', 3)
-            print('error')
+            print('error, downgrade priority')
         return True
 
     # method ini digunakan untuk memproses update primary key
@@ -118,11 +128,30 @@ class Sync:
 
             if(update):
                 # update PK success
-                print("Updated PK")
+                # cek pesan lain yang menggunakan PK lama
+                # update ke PK baru
+                if(not env.MASTER_NODE):
+                    check = "select * from tb_sync_inbox where is_process=0 and status = 'waiting' and (msg_type = 'DEL' or msg_type='UPD') and row_id = {}"
+
+                    res = self.syncDB.executeFetchAll(
+                        check.format(data['row_id']))
+                    if(res['execute_status']):
+                        # update ke PK yang benar
+                        for msg in res['data']:
+                            query = "update tb_sync_inbox set row_id={} where inbox_id={}"
+                            updated = self.syncDB.executeCommit(
+                                query.format(data['query'], msg['inbox_id']))
+                            if(not updated):
+                                print(self.syncDB.getLastCommitError()['msg'])
+                    else:
+                        print("CHECK PESAN LAIN ERROR: {}".format(
+                            res['error_data']['msg']))
                 self.setAsProcessed(data['inbox_id'])
+                print("done")
             else:
                 # update primary key to 0
                 # as temp
+                print('error, downgrade priority')
                 update = self.syncDB.executeCommit(sql.format(
                     data['table_name'], primary_key, 0, primary_key, data['row_id']))
                 if(update):
@@ -138,10 +167,37 @@ class Sync:
                     "Sync.processPrimaryKey", json.dumps(self.syncDB.getLastCommitError()))
 
     def processUpdate(self, data):
-        return True
+        print("UPD not yet support")
 
     def processDelete(self, data):
-        return True
+        # cek apakah ada inbox yang bertipe PRI
+        # berdasarkan primari key yang masuk
+        # jika ada mata update inbox tersebut jadi terproses
+        # jika tidak ada lakukan delete seperti biasa
+        checkQuery = """
+            select count(inbox_id) as total from tb_sync_inbox where msg_type = 'PRI'
+            and is_process = 0 and status = 'waiting'
+            and table_name = '{}'
+            and query = '{}'
+        """
+
+        result = self.syncDB.executeFetchOne(
+            checkQuery.format(data['table_name'], data['query']))
+        if(result['execute_status']):
+            if(result['data']['total'] > 0):
+                print('Skip, total PRI: {}'.format(result['data']['total']))
+            else:
+                dltQuery = "delete from {} where {}={}"
+                pkColumnName = self._getPrimaryKeyColumn(data['table_name'])
+                delete = self.syncDB.executeCommit(dltQuery.format(
+                    data['table_name'], pkColumnName, data['query']))
+
+                if(delete):
+                    print('done')
+                else:
+                    self.setPriority(data['inbox_id'], 'tb_sync_inbox', 3)
+                    print('error: {}'.format(
+                        self.syncDB.getLastCommitError()['msg']))
 
     def processAck(self, data):
         ack = self.outbox.update(data={
@@ -196,7 +252,7 @@ while True:
         if(inbox['data']):
             for item in inbox['data']:
                 print(
-                    "[{}] -> #{}".format(datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S"), item['msg_id']))
+                    "[{}] -> #{}".format(datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S"), item['msg_id']), end=" ")
                 msgType = item['msg_type']
                 if(msgType == 'INS'):
                     sync.processInsert(item)
@@ -216,3 +272,4 @@ while True:
     else:
         print('Error')
         sys.exit()
+    sys.exit()
