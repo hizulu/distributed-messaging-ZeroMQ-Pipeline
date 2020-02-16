@@ -18,9 +18,9 @@ DROP TABLE IF EXISTS `tb_buku`;
 
 CREATE TABLE `tb_buku` (
   `buku_id` int(11) NOT NULL AUTO_INCREMENT,
-  `nama_buku` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  `nama_buku` varchar(100) DEFAULT NULL,
   `jenisbuku_id` int(11) DEFAULT NULL,
-  `isbn` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  `isbn` varchar(50) DEFAULT NULL,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `last_action_at` int(11) DEFAULT NULL,
@@ -35,9 +35,9 @@ DROP TABLE IF EXISTS `tb_sync_changelog`;
 CREATE TABLE `tb_sync_changelog` (
   `log_id` bigint(20) NOT NULL AUTO_INCREMENT,
   `row_id` int(1) DEFAULT NULL COMMENT 'primary key of the table',
-  `table` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
-  `query` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci,
-  `type` varchar(5) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  `table` varchar(100) DEFAULT NULL,
+  `query` text,
+  `type` varchar(5) DEFAULT NULL,
   `is_proceed` tinyint(4) DEFAULT '0',
   `first_time_occur_at` int(11) DEFAULT NULL,
   `occur_at` bigint(20) DEFAULT NULL,
@@ -52,7 +52,7 @@ DROP TABLE IF EXISTS `tb_sync_errors`;
 
 CREATE TABLE `tb_sync_errors` (
   `error_id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `error_msg` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci,
+  `error_msg` text,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`error_id`)
@@ -65,10 +65,10 @@ DROP TABLE IF EXISTS `tb_sync_inbox`;
 CREATE TABLE `tb_sync_inbox` (
   `inbox_id` bigint(20) NOT NULL AUTO_INCREMENT,
   `row_id` int(11) DEFAULT NULL,
-  `table_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
-  `msg_type` enum('INS','UPD','DEL','ACK','PRI') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  `table_name` varchar(255) DEFAULT NULL,
+  `msg_type` enum('INS','UPD','DEL','ACK','PRI') DEFAULT NULL,
   `msg_id` int(11) DEFAULT NULL,
-  `query` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci,
+  `query` text,
   `client_unique_id` int(11) DEFAULT NULL,
   `master_status` tinyint(4) DEFAULT '0',
   `is_process` tinyint(4) DEFAULT '0',
@@ -89,8 +89,8 @@ DROP TABLE IF EXISTS `tb_sync_log`;
 
 CREATE TABLE `tb_sync_log` (
   `log_id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `log_function` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
-  `log_msg` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci,
+  `log_function` varchar(255) DEFAULT NULL,
+  `log_msg` text,
   PRIMARY KEY (`log_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -101,8 +101,8 @@ DROP TABLE IF EXISTS `tb_sync_master`;
 CREATE TABLE `tb_sync_master` (
   `master_id` int(11) NOT NULL AUTO_INCREMENT,
   `master_unique_id` int(11) DEFAULT NULL,
-  `master_key` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
-  `master_ip` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  `master_key` varchar(200) DEFAULT NULL,
+  `master_ip` varchar(100) DEFAULT NULL,
   `master_port` int(11) DEFAULT NULL,
   PRIMARY KEY (`master_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -114,15 +114,15 @@ DROP TABLE IF EXISTS `tb_sync_outbox`;
 CREATE TABLE `tb_sync_outbox` (
   `outbox_id` bigint(20) NOT NULL AUTO_INCREMENT,
   `row_id` int(11) DEFAULT NULL COMMENT 'primary key of table in local',
-  `table_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
-  `msg_type` enum('INS','UPD','DEL','ACK','PRI') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  `table_name` varchar(255) DEFAULT NULL,
+  `msg_type` enum('INS','UPD','DEL','ACK','PRI') DEFAULT NULL,
   `msg_id` int(11) DEFAULT NULL COMMENT 'outbox_id from local',
-  `query` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci,
+  `query` text,
   `client_unique_id` int(11) DEFAULT NULL COMMENT 'client_unique_id',
   `is_sent` tinyint(4) DEFAULT '0',
   `is_arrived` tinyint(4) DEFAULT '0',
   `is_error` tinyint(4) DEFAULT '0',
-  `status` enum('waiting','sent','arrived','canceled','retry') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT 'waiting',
+  `status` enum('waiting','sent','arrived','canceled','retry') DEFAULT 'waiting',
   `priority` tinyint(4) DEFAULT '2',
   `sync_token` varchar(100) DEFAULT NULL,
   `first_time_occur_at` int(11) DEFAULT NULL,
@@ -138,8 +138,8 @@ DROP TABLE IF EXISTS `tb_sync_setting`;
 
 CREATE TABLE `tb_sync_setting` (
   `setting_id` int(11) NOT NULL AUTO_INCREMENT,
-  `setting_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
-  `setting_value` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  `setting_name` varchar(255) DEFAULT NULL,
+  `setting_value` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`setting_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
 
@@ -149,7 +149,7 @@ DROP TABLE IF EXISTS `tb_sync_synchronization`;
 
 CREATE TABLE `tb_sync_synchronization` (
   `sync_id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `query` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci,
+  `query` text,
   `type` tinyint(4) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`sync_id`)
@@ -161,7 +161,7 @@ DELIMITER $$
 
 /*!50003 DROP TRIGGER*//*!50032 IF EXISTS */ /*!50003 `before_insert_tb_buku` */$$
 
-/*!50003 CREATE */ /*!50017 DEFINER = 'rama'@'%' */ /*!50003 TRIGGER `before_insert_tb_buku` BEFORE INSERT ON `tb_buku` FOR EACH ROW BEGIN
+/*!50003 CREATE */ /*!50003 TRIGGER `before_insert_tb_buku` BEFORE INSERT ON `tb_buku` FOR EACH ROW BEGIN
 	declare auto_id bigint default 0;
 	
 	select ifnull(MAX(log_id), 0)+1 into auto_id
@@ -183,7 +183,7 @@ DELIMITER $$
 
 /*!50003 DROP TRIGGER*//*!50032 IF EXISTS */ /*!50003 `after_insert_buku` */$$
 
-/*!50003 CREATE */ /*!50017 DEFINER = 'rama'@'%' */ /*!50003 TRIGGER `after_insert_buku` AFTER INSERT ON `tb_buku` FOR EACH ROW BEGIN
+/*!50003 CREATE */ /*!50003 TRIGGER `after_insert_buku` AFTER INSERT ON `tb_buku` FOR EACH ROW BEGIN
 	declare qry text;
 	declare tb varchar(100);
 
@@ -202,7 +202,7 @@ DELIMITER $$
 
 /*!50003 DROP TRIGGER*//*!50032 IF EXISTS */ /*!50003 `after_delete_buku` */$$
 
-/*!50003 CREATE */ /*!50017 DEFINER = 'rama'@'%' */ /*!50003 TRIGGER `after_delete_buku` BEFORE DELETE ON `tb_buku` FOR EACH ROW BEGIN
+/*!50003 CREATE */ /*!50003 TRIGGER `after_delete_buku` BEFORE DELETE ON `tb_buku` FOR EACH ROW BEGIN
 	DECLARE qry TEXT;
 	DECLARE tb VARCHAR(100);
 	
@@ -222,7 +222,7 @@ DELIMITER $$
 
 /*!50003 DROP TRIGGER*//*!50032 IF EXISTS */ /*!50003 `after_insert_changelog` */$$
 
-/*!50003 CREATE */ /*!50017 DEFINER = 'rama'@'%' */ /*!50003 TRIGGER `after_insert_changelog` AFTER INSERT ON `tb_sync_changelog` FOR EACH ROW BEGIN
+/*!50003 CREATE */ /*!50003 TRIGGER `after_insert_changelog` AFTER INSERT ON `tb_sync_changelog` FOR EACH ROW BEGIN
 	
 	declare finished integer default 0;
 	declare id integer(11);
