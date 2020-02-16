@@ -194,6 +194,7 @@ class Sync:
 
                 if(delete):
                     print('done')
+                    self.setAsProcessed(data['inbox_id'])
                 else:
                     self.setPriority(data['inbox_id'], 'tb_sync_inbox', 3)
                     print('error: {}'.format(
