@@ -57,7 +57,7 @@ class Ventilator:
             print("[{}] -> #{} to {} ->".format(datetime.datetime.now().strftime(
                 "%d-%m-%Y %H:%M:%S"), item['outbox_id'], item['client_unique_id']), end=" ")
             isValid = False
-            invalidReason = 'None'
+            invalidReason = 'Loop'
             if(item['msg_type'] == 'INS' or item['msg_type'] == 'DEL' or item['msg_type'] == 'UPD'):
                 if(item['msg_type'] == 'INS' or item['msg_type'] == 'DEL'):
                     # mengecek pesan ins valid menggunakan
@@ -84,8 +84,7 @@ class Ventilator:
                     # jangan kirim pesan DEL jika row yang di DEL belum selesai
                     if(not env.MASTER_NODE and item['msg_type'] == 'DEL'):
                         checkPRIQuery = """
-                            select * as total
-                            from tb_sync_inbox where msg_type = 'PRI'
+                            select * from tb_sync_inbox where msg_type = 'PRI'
                             and is_process = 0 and status='waiting'
                             and table_name = '{}' and row_id = '{}'
                         """

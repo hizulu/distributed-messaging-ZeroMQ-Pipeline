@@ -131,14 +131,14 @@ class Sync:
                 # cek pesan lain yang menggunakan PK lama
                 # update ke PK baru
                 if(not env.MASTER_NODE):
-                    check = "select * from tb_sync_outbox where is_process=0 and (status = 'waiting' or status='canceled') and (msg_type = 'DEL' or msg_type='UPD') and row_id = {}"
+                    check = "select * from tb_sync_outbox where is_sent=0 and (status = 'waiting' or status='canceled') and (msg_type = 'DEL' or msg_type='UPD') and row_id = {}"
 
                     res = self.syncDB.executeFetchAll(
                         check.format(data['row_id']))
                     if(res['execute_status']):
                         # update ke PK yang benar
                         for msg in res['data']:
-                            query = "update tb_sync_outbox set row_id={} where outbox_id={}"
+                            query = "update tb_sync_outbox set row_id={}, status='waiting' where outbox_id={}"
                             updated = self.syncDB.executeCommit(
                                 query.format(data['query'], msg['outbox_id']))
                             if(not updated):
