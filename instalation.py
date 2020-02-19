@@ -27,6 +27,7 @@ class Instalation:
 
     def _createAfterInsertTrigger(self, tablename, columns=[]):
         triggername = f"after_insert_{tablename}"
+        print(f"Creating `{triggername}`", end="...")
         header = f"""CREATE TRIGGER `{triggername}` AFTER INSERT ON `{tablename}`
         FOR EACH ROW BEGIN
         """
@@ -81,12 +82,13 @@ class Instalation:
         footer = "END;"
 
         inserted = self.db.executeCommit(header + declaration + body + footer)
-        print(inserted)
+        return inserted
 
     def _createBeforeInsertTrigger(self, tablename):
         # before insert digunakan untuk membuat token dan last action at
         # pada setiap table yang di sinkron
         triggername = f"before_insert_{tablename}"
+        print(f"Creating `{triggername}`", end="...")
         header = f"""CREATE TRIGGER `{triggername}` BEFORE INSERT ON `{tablename}`
         FOR EACH ROW BEGIN
         """
@@ -108,11 +110,12 @@ class Instalation:
         footer = "END;"
 
         created = self.db.executeCommit(header + declaration + body + footer)
-        print(created)
+        return created
 
     def _createAfterDeleteTrigger(self, tablename, pk):
         # after delete
         triggername = f"after_delete_{tablename}"
+        print(f"Creating `{triggername}`", end="...")
         header = f"""CREATE
             TRIGGER `{triggername}` BEFORE DELETE ON `{tablename}`
             FOR EACH ROW BEGIN
@@ -134,7 +137,7 @@ class Instalation:
         footer = "END;"
 
         created = self.db.executeCommit(header + declaration + body + footer)
-        print(created)
+        return created
 
     def generateSyncTrigger(self):
         print('--------------')
@@ -147,8 +150,12 @@ class Instalation:
         if (tables['execute_status']):
             for tb in tables['data']:
                 columns = self.getColums(tb['TABLE_NAME'])
-                self._createAfterInsertTrigger(
-                    tb['TABLE_NAME'], columns['data'])
+                print('OK') if self._createAfterInsertTrigger(
+                    tb['TABLE_NAME'], columns['data']) else print("ERROR")
+                print('OK') if self._createBeforeInsertTrigger(
+                    tb['TABLE_NAME']) else print("ERROR")
+                print('OK') if self._createAfterDeleteTrigger(
+                    tb['TABLE_NAME'], columns['data'][0]['COLUMN_NAME']) else print("ERROR")
 
     def dropAllTrigger(self):
         print('--------------')
@@ -328,5 +335,9 @@ class Instalation:
                 print('ERROR')
 
 
-autotrigger = Instalation()
-autotrigger.createSyncTable()
+# autotrigger = Instalation()
+# autotrigger.dropAllTrigger()
+# autotrigger.createSyncTable()
+# autotrigger.generateDefaultTrigger()
+# autotrigger.addUnixTimestampColumnToEveryTable()
+# autotrigger.generateSyncTrigger()
