@@ -1,14 +1,19 @@
 from DatabaseConnection import DatabaseConnection
-import env
+import string
+import random
 
 
 class Instalation:
 
-    def __init__(self):
+    def __init__(self, db=None):
         self.dbName = "db_autotrigger"
         # self.dbName = env.DB_NAME
-        self.db = DatabaseConnection(
-            env.DB_HOST, env.DB_UNAME, env.DB_PASSWORD, self.dbName)
+        # self.db = DatabaseConnection(
+        #     env.DB_HOST, env.DB_UNAME, env.DB_PASSWORD, self.dbName)
+        self.db = db
+
+    def setUniqueId(self, id):
+        self.uniqueId = id
 
     def getTables(self):
         query = """
@@ -24,6 +29,10 @@ class Instalation:
             where TABLE_SCHEMA = '{}' and TABLE_NAME = '{}'
         """
         return self.db.executeFetchAll(query.format(self.dbName, tableName))
+
+    def randomString(self, stringLength=16):
+        letters = string.ascii_letters
+        return ''.join(random.choice(letters) for i in range(stringLength))
 
     def _createAfterInsertTrigger(self, tablename, columns=[]):
         triggername = f"after_insert_{tablename}"
@@ -102,7 +111,7 @@ class Instalation:
         FROM tb_sync_changelog;
 
         IF new.sync_token IS NULL THEN
-            SET new.sync_token = HEX(AES_ENCRYPT(auto_id, '{env.UNIQUE_ID}'));
+            SET new.sync_token = HEX(AES_ENCRYPT(auto_id, '{self.uniqueId}'));
             SET new.last_action_at = UNIX_TIMESTAMP();
         END IF;
         """
@@ -325,14 +334,14 @@ class Instalation:
             """.format(tb['TABLE_NAME'], lastColumn['COLUMN_NAME'])
             if(self.db.executeCommit(alterTableQuery)):
                 print("OK")
-
-                print(
-                    f"Add `sync_token` column to `{tb['TABLE_NAME']}`", end="...")
-                addSyncTokenQuery = f"alter table {tb['TABLE_NAME']} add sync_token varchar(100) after last_action_at"
-                print('OK') if self.db.executeCommit(
-                    addSyncTokenQuery) else print("ERROR")
             else:
                 print('ERROR')
+
+            print(
+                f"Add `sync_token` column to `{tb['TABLE_NAME']}`", end="...")
+            addSyncTokenQuery = f"alter table {tb['TABLE_NAME']} add sync_token varchar(100) after last_action_at"
+            print('OK') if self.db.executeCommit(
+                addSyncTokenQuery) else print("ERROR")
 
 
 # autotrigger = Instalation()
