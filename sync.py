@@ -1,5 +1,5 @@
 from DatabaseConnection import DatabaseConnection
-import env
+import env1 as env
 import sys
 from outbox import Outbox
 from systemlog import SystemLog
@@ -224,6 +224,48 @@ class Sync:
             self.setAsProcessed(data['inbox_id'])
         return True
 
+    def processReg(self, data):
+        if(env.MASTER_NODE):
+            regData = data['query'].split('#')
+            reg = {}
+            for item in regData:
+                attributes = item.split(':')
+                reg[attributes[0]] = attributes[1]
+
+            # cek apakah ip address sudah terdaftar
+            checkQuery = f"select count(*) as total from tb_sync_client where client_ip = '{reg['ip_address']}'"
+            check = self.syncDB.executeFetchOne(checkQuery)
+            if (check['total'] > 0):
+                outbox = {
+                    'row_id': 0,
+                    'table_name': '',
+                    'msg_type': 'REG',
+                    'query': f'status:ERROR',
+                    'client_unique_id': 0,
+                    'client_ip': reg['ip_address'],
+                    'client_port': reg['port'],
+                    'client_key': reg['secret_key'],
+                    'client_iv': reg['iv_key']
+                }
+                self.outbox.insert(outbox)
+            else:
+                client_id = int(time.time())
+                sql = f"insert into tb_sync_client(client_unique_id, client_key, client_iv, client_port, client_ip) values({client_id}, '{reg['secret_key']}', '{reg['iv_key']}', {reg['port']}, '{reg['ip_address']}')"
+
+                inserted = self.syncDB.executeCommit(sql)
+                if (not inserted):
+                    self.setPriority(data['inbox_id'], 'tb_sync_inbox', 3)
+                else:
+                    outbox = {
+                        'row_id': 0,
+                        'table_name': '',
+                        'msg_type': 'REG',
+                        'query': f'status:OK#id:{client_id}',
+                        'client_unique_id': client_id
+                    }
+                    self.outbox.insert(outbox)
+                    self.setAsProcessed(data['inbox_id'])
+
     def getData(self):
         self.syncDB.connect()
         sql = "select * from tb_sync_inbox where is_process = 0 limit " + \
@@ -265,6 +307,8 @@ while True:
                     sync.processAck(item)
                 elif(msgType == "PRI"):
                     sync.processPrimaryKey(item)
+                elif (msgType == 'REG'):
+                    sync.processReg(item)
                 else:
                     sync.syncDB.insError("Msg type not found for id=" +
                                          str(item['inbox_id']))
@@ -273,4 +317,4 @@ while True:
     else:
         print('Error')
         sys.exit()
-    # sys.exit()
+    sys.exit()

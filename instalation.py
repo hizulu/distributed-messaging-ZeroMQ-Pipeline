@@ -223,7 +223,40 @@ class Instalation:
             print("ERROR")
         else:
             print('OK')
-        # print(create)
+
+        print('Creating default trigger `{}`...'.format(
+            'before_insert_outbox'), end=" ")
+        header = """
+            CREATE
+            TRIGGER `before_insert_outbox` BEFORE INSERT ON `tb_sync_outbox` 
+            FOR EACH ROW BEGIN
+        """
+        declaration = """
+            DECLARE ip VARCHAR(100);
+            DECLARE ports INT(11);
+            DECLARE skey VARCHAR(16);
+            DECLARE iv VARCHAR(16);
+        """
+        body = """
+            IF (new.client_unique_id <> 0) THEN	
+                SELECT client_ip, client_port, client_key, client_iv INTO ip, ports, skey, iv
+                FROM tb_sync_client WHERE client_unique_id = new.client_unique_id;
+                
+                SET new.client_ip = ip;
+                SET new.client_port = ports;
+                SET new.client_key = skey;
+                SET new.client_iv = iv;
+            END IF;
+        """
+        footer = """
+            END;
+        """
+        create = self.db.executeCommit(
+            header + ' ' + declaration + ' ' + body + ' ' + footer)
+        if (not create):
+            print("ERROR")
+        else:
+            print('OK')
 
     def __createChanglogTable(self):
         sql = """
@@ -302,6 +335,10 @@ class Instalation:
         `occur_at` bigint(20) DEFAULT NULL,
         `created_at` datetime DEFAULT NULL,
         `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+        `client_ip` varchar(100) DEFAULT NULL,
+        `client_port` int(11) DEFAULT NULL,
+        `client_key` varchar(16) DEFAULT NULL,
+        `client_iv` varchar(16) DEFAULT NULL,
         PRIMARY KEY (`outbox_id`)
         )
         """

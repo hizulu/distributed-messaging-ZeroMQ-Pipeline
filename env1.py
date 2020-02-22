@@ -4,7 +4,7 @@ DB_HOST = "localhost"
 DB_UNAME = "rama"
 DB_PASSWORD = "ramapradana24"
 DB_PORT = 3306
-DB_NAME = "db_ta"
+DB_NAME = "db_autotrigger"
 
 UNIQUE_ID = 234
 SINK_ADDR = 'tcp://192.168.229.1:5558'

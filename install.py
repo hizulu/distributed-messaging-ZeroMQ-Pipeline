@@ -18,18 +18,21 @@ if (isMaster != 'y' and isMaster != 'n'):
 isMaster = True if isMaster == 'y' else False
 
 # db config
-dbHost = input("[?] Masukkan Host DB: ")
-dbName = input("[?] Masukkan Nama DB: ")
-dbUser = input("[?] Masukkan Username DB: ")
-dbPass = input("[?] Masukkan Password DB: ")
-print("[/] Testing koneksi DB", end="...")
-db = DatabaseConnection(dbHost, dbUser, dbPass, dbName)
-try:
-    db.connect()
-except Exception as e:
-    print("ERROR:", e.args[1])
-    sys.exit()
-print("OK")
+while True:
+    dbHost = input("[?] Masukkan Host DB: ")
+    dbName = input("[?] Masukkan Nama DB: ")
+    dbUser = input("[?] Masukkan Username DB: ")
+    dbPass = input("[?] Masukkan Password DB: ")
+    print("[/] Testing koneksi DB", end="...")
+    db = DatabaseConnection(dbHost, dbUser, dbPass, dbName)
+    try:
+        db.connect()
+    except Exception as e:
+        print("ERROR:", e.args[1])
+        continue
+    print("OK")
+    break
+
 
 # cek table
 if(isMaster):
@@ -105,19 +108,14 @@ else:
     print("OK") if inserted else print("ERROR")
 
     print("[/] Registrasi client ke Master", end="...")
-    regData = {
-        'secret_key': secretKey,
-        'iv_key': ivKey,
-        'ip_address': ipaddr,
-        'port': 5558
-    }
+    regData = f"secret_key:{secretKey}#iv_key:{ivKey}#ip_address:{ipaddr}#port:5558"
     # mengirim menggunakan worker
     context = zmq.Context()
     sender = context.socket(zmq.PUSH)
     sender.connect(f"tcp://{masterip}:5558")
     enc = AES256()
     jsonPacket = {
-        'query': json.dumps(regData),
+        'query': regData,
         'client_unique_id': 0,
         'timestamp': "",
         'occur_at': 0,
@@ -138,7 +136,16 @@ else:
     }
     sender.send_json(encryptedPacket)
 
+    receiver = context.socket(zmq.PULL)
+    receiver.bind(f"tcp://{ipaddr}:5558")
+    while True:
+        msg = receiver.recv_json()
+        enc = AES256()
+        plain = json.loads(enc.decrypt(ivKey, msg['data'], secretKey))
+        msg['data'] = plain[0]
+        print(msg)
 
+sys.exit()
 # cetak env
 env_file = open('env.py', 'w')
 env_file.write(f"MASTER_MODE={isMaster}\n")

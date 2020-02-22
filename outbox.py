@@ -27,10 +27,16 @@ class Outbox:
             time.time())
         dttime = datetime.datetime.utcfromtimestamp(
             unix_timestamp).strftime('%Y-%m-%d %H:%M:%S')
-        query = """
-            insert into tb_sync_outbox(row_id, table_name, msg_type, msg_id, query, client_unique_id, occur_at, first_time_occur_at, created_at, updated_at, priority, sync_token)
-            values("{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}")
-        """.format(rowId, table_name, msg_type, msg_id, string_query, client_uid, unix_timestamp, first_time_occur_at, dttime, dttime, priority, sync_token)
+        if (client_uid == 0):
+            query = """
+                insert into tb_sync_outbox(row_id, table_name, msg_type, msg_id, query, client_unique_id, occur_at, first_time_occur_at, created_at, updated_at, priority, sync_token, client_ip, client_port, client_key, client_iv)
+                values("{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}")
+            """.format(rowId, table_name, msg_type, msg_id, string_query, client_uid, unix_timestamp, first_time_occur_at, dttime, dttime, priority, sync_token, data['client_ip'], data['client_port'], data['client_key'], data['client_iv'])
+        else:
+            query = """
+                insert into tb_sync_outbox(row_id, table_name, msg_type, msg_id, query, client_unique_id, occur_at, first_time_occur_at, created_at, updated_at, priority, sync_token)
+                values("{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}")
+            """.format(rowId, table_name, msg_type, msg_id, string_query, client_uid, unix_timestamp, first_time_occur_at, dttime, dttime, priority, sync_token)
 
         return self.db.executeCommit(sql=query)
 

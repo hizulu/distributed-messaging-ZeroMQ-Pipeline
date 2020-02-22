@@ -4,7 +4,7 @@ import datetime
 import zmq
 import json
 from encryption import AES256
-import env
+import env1 as env
 from DatabaseConnection import DatabaseConnection
 from systemlog import SystemLog
 from inbox import Inbox
@@ -15,15 +15,15 @@ import os
 class Sink:
     data = None
 
-    def __init__(self):
-        self.key = env.SECRET_KEY
-        self.iv = env.IV_KEY
+    def __init__(self, dbhost, dbusername, dbpass, dbname, sinkaddr, skey, ivkey):
+        self.key = skey
+        self.iv = ivkey
         self.context = zmq.Context()
         self.receiver = self.context.socket(zmq.PULL)
-        self.receiver.bind(env.SINK_ADDR)
+        self.receiver.bind(sinkaddr)
         self.syslog = SystemLog()
         self.db = DatabaseConnection(
-            env.DB_HOST, env.DB_UNAME, env.DB_PASSWORD, env.DB_NAME)
+            dbhost, dbusername, dbpass, dbname)
         self.inbox = Inbox(self.db)
         self.outbox = Outbox(self.db)
 
@@ -41,7 +41,8 @@ class Sink:
         return True
 
 
-sink = Sink()
+sink = Sink(env.DB_HOST, env.DB_UNAME, env.DB_PASSWORD,
+            env.DB_NAME, env.SINK_ADDR, env.SECRET_KEY, env.IV_KEY)
 while True:
     s = sink.recv_json()
     print("[{}] -> #{}".format(datetime.datetime.now().strftime(
@@ -79,7 +80,7 @@ while True:
 
         # send back which message is received using worker
         # only reply non-ACK msg
-        if(s['data']['msg_type'] != 'ACK'):
+        if(s['data']['msg_type'] != 'ACK' or s['data']['msg_type'] != 'REG'):
             data = s['data']
             sink.outbox.insert(data={
                 'row_id': 0,
