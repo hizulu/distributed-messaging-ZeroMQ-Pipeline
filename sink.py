@@ -9,6 +9,7 @@ from DatabaseConnection import DatabaseConnection
 from systemlog import SystemLog
 from inbox import Inbox
 from outbox import Outbox
+import os
 
 
 class Sink:
