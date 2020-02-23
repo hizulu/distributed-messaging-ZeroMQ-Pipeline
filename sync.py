@@ -235,12 +235,13 @@ class Sync:
             # cek apakah ip address sudah terdaftar
             checkQuery = f"select count(*) as total from tb_sync_client where client_ip = '{reg['ip_address']}'"
             check = self.syncDB.executeFetchOne(checkQuery)
-            if (check['total'] > 0):
+            if (check['data']['total'] > 0):
                 outbox = {
                     'row_id': 0,
                     'table_name': '',
                     'msg_type': 'REG',
-                    'query': f'status:ERROR',
+                    'msg_id': 0,
+                    'query': f"status:ERROR#reason:IP Address sudah digunakan#for:{data['msg_id']}",
                     'client_unique_id': 0,
                     'client_ip': reg['ip_address'],
                     'client_port': reg['port'],
@@ -260,11 +261,26 @@ class Sync:
                         'row_id': 0,
                         'table_name': '',
                         'msg_type': 'REG',
-                        'query': f'status:OK#id:{client_id}',
+                        'msg_id': 0,
+                        'query': f"status:OK#id:{client_id}#for:{data['msg_id']}",
                         'client_unique_id': client_id
                     }
                     self.outbox.insert(outbox)
                     self.setAsProcessed(data['inbox_id'])
+        else:
+            outbox = {
+                'row_id': 0,
+                'table_name': '',
+                'msg_type': 'REG',
+                'msg_id': 0,
+                'query': f"status:ERROR#reason:Host bukan master#for:{data['msg_id']}",
+                'client_unique_id': 0,
+                'client_ip': reg['ip_address'],
+                'client_port': reg['port'],
+                'client_key': reg['secret_key'],
+                'client_iv': reg['iv_key']
+            }
+            self.outbox.insert(outbox)
 
     def getData(self):
         self.syncDB.connect()

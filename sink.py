@@ -80,7 +80,7 @@ while True:
 
         # send back which message is received using worker
         # only reply non-ACK msg
-        if(s['data']['msg_type'] != 'ACK' or s['data']['msg_type'] != 'REG'):
+        if(s['data']['msg_type'] != 'ACK' and s['data']['msg_type'] != 'REG'):
             data = s['data']
             sink.outbox.insert(data={
                 'row_id': 0,

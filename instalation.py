@@ -5,11 +5,11 @@ import random
 
 class Instalation:
 
-    def __init__(self, db=None):
-        self.dbName = "db_autotrigger"
+    def __init__(self, dbhost, dbname, dbusername, dbpass):
+        self.dbName = dbname
         # self.dbName = env.DB_NAME
-        # self.db = DatabaseConnection(
-        #     env.DB_HOST, env.DB_UNAME, env.DB_PASSWORD, self.dbName)
+        self.db = DatabaseConnection(
+            dbhost, dbusername, dbpass, dbname)
         self.db = db
 
     def setUniqueId(self, id):

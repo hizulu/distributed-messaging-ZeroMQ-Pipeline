@@ -6,6 +6,7 @@ import os
 import json
 import zmq
 from encryption import AES256
+import time
 
 
 print("Install Syncronization Service")
@@ -52,7 +53,7 @@ if (len(ip_candidates) <= 0):
 ipaddr = ip_candidates[0]
 print(f"[/] Menggunakan `{ipaddr}` sebagai IP Address")
 
-ins = Instalation(db)
+ins = Instalation(dbHost, dbName, dbUser, dbPass)
 defaultSinkPort = 5558
 defaultWorkerPort = 5557
 defaultlogRowLimit = 0
@@ -73,15 +74,16 @@ if (isMaster):
 else:
     # menghapus isi dari setiap tabel dengan prefix
     # tb_sync
-    print('[/] Menghapus data tabel sinkron', end="...")
-    sql = """
-        DELETE FROM tb_sync_client;
-        DELETE FROM tb_sync_inbox;
-        DELETE FROM tb_sync_outbox;
-        DELETE FROM tb_sync_changlog;
-    """
-    deleted = db.executeCommit(sql)
-    print('OK') if deleted else print("ERROR")
+    print('[/] Menghapus data tabel sinkron')
+    sync_tables = ['tb_sync_inbox', 'tb_sync_client',
+                   'tb_sync_outbox', 'tb_sync_changelog']
+    for table in sync_tables:
+        print(f'[/] Menghapus data tabel `{table}`', end="...")
+        sql = f"DELETE FROM {table}"
+        deleted = db.executeCommit(sql)
+        if(not deleted):
+            print(db.getLastCommitError())
+        print('OK') if deleted else print("ERROR")
     #
 
     while True:
@@ -128,6 +130,7 @@ else:
     sender = context.socket(zmq.PUSH)
     sender.connect(f"tcp://{masterip}:5558")
     enc = AES256()
+    msg_id = int(time.time())
     jsonPacket = {
         'query': regData,
         'client_unique_id': 0,
@@ -137,13 +140,12 @@ else:
         'first_time_occur_at': 0,
         'row_id': 0,
         'table_name': '',
-        'msg_id': 0,
+        'msg_id': msg_id,
         'msg_type': "REG",
         'master_status': 0
     },
     data = enc.encrypt(json.dumps(jsonPacket), masterSecretKey, masterIvKey)
     # data = jsonPacket
-    print(data)
     encryptedPacket = {
         'sender_id': 0,
         'data': data
@@ -157,7 +159,9 @@ else:
         enc = AES256()
         plain = json.loads(enc.decrypt(ivKey, msg['data'], secretKey))
         msg['data'] = plain[0]
-        print(msg)
+        data = msg['data']
+        if (data['msg_type'] == 'REG'):
+
 
 sys.exit()
 # cetak env
