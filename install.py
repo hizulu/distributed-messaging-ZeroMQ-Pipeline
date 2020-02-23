@@ -33,7 +33,6 @@ while True:
     print("OK")
     break
 
-
 # cek table
 if(isMaster):
     cekTableQuery = "show tables"
@@ -44,11 +43,6 @@ if(isMaster):
         sys.exit()
 #
 
-ins = Instalation(db)
-ins.dropAllTrigger()
-ins.createSyncTable()
-ins.generateDefaultTrigger()
-
 ipaddr = input(
     "[?] Masukkan IP Address host yang dapat hubungi oleh host lain: ")
 ip_candidates = re.findall(r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b", ipaddr)
@@ -58,6 +52,7 @@ if (len(ip_candidates) <= 0):
 ipaddr = ip_candidates[0]
 print(f"[/] Menggunakan `{ipaddr}` sebagai IP Address")
 
+ins = Instalation(db)
 defaultSinkPort = 5558
 defaultWorkerPort = 5557
 defaultlogRowLimit = 0
@@ -67,20 +62,38 @@ secretKey = ins.randomString()
 ivKey = ins.randomString()
 
 if (isMaster):
+    ins.dropAllTrigger()
+    ins.createSyncTable()
+    ins.generateDefaultTrigger()
     unique_id = 1
     ins.setUniqueId(unique_id)
 
     ins.addUnixTimestampColumnToEveryTable()
     ins.generateSyncTrigger()
 else:
-    masterip = input('[?] Masukkan IP Address Master: ')
-    ip_candidates = re.findall(
-        r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b", masterip)
-    if (len(ip_candidates) <= 0):
-        print('[!] IP Address tidak valid')
-        sys.exit()
-    masterip = ip_candidates[0]
-    print(f"[/] Menggunakan `{masterip}` sebagai IP Address Master")
+    # menghapus isi dari setiap tabel dengan prefix
+    # tb_sync
+    print('[/] Menghapus data tabel sinkron', end="...")
+    sql = """
+        DELETE FROM tb_sync_client;
+        DELETE FROM tb_sync_inbox;
+        DELETE FROM tb_sync_outbox;
+        DELETE FROM tb_sync_changlog;
+    """
+    deleted = db.executeCommit(sql)
+    print('OK') if deleted else print("ERROR")
+    #
+
+    while True:
+        masterip = input('[?] Masukkan IP Address Master: ')
+        ip_candidates = re.findall(
+            r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b", masterip)
+        if (len(ip_candidates) <= 0):
+            print('[!] IP Address tidak valid')
+            continue
+        masterip = ip_candidates[0]
+        print(f"[/] Menggunakan `{masterip}` sebagai IP Address Master")
+        break
 
     while True:
         masterSecretKey = input('[?] Masukkan Secret Key Master: ')
@@ -98,14 +111,15 @@ else:
         else:
             break
 
-    # memasukkan master ke tabel client
-    print("[/] Memasukkan master ke tabel client", end="...")
-    sql = f"""
-        insert into tb_sync_client(client_unique_id, client_key, client_iv, client_ip, client_port)
-        values(1, '{masterSecretKey}', '{masterIvKey}', '{masterip}', 5558)
-    """
-    inserted = db.executeCommit(sql)
-    print("OK") if inserted else print("ERROR")
+    # # memasukkan master ke tabel client
+    # print("[/] Memasukkan master ke tabel client", end="...")
+    # sql = f"""
+    #     insert into tb_sync_client(client_unique_id, client_key, client_iv, client_ip, client_port)
+    #     values(1, '{masterSecretKey}', '{masterIvKey}', '{masterip}', 5558)
+    # """
+    # inserted = db.executeCommit(sql)
+    # print("OK") if inserted else print("ERROR")
+    # #
 
     print("[/] Registrasi client ke Master", end="...")
     regData = f"secret_key:{secretKey}#iv_key:{ivKey}#ip_address:{ipaddr}#port:5558"
