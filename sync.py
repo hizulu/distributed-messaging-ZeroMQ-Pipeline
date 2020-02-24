@@ -249,6 +249,7 @@ class Sync:
                     'client_iv': reg['iv_key']
                 }
                 self.outbox.insert(outbox)
+                self.setAsProcessed(data['inbox_id'])
             else:
                 client_id = int(time.time())
                 sql = f"insert into tb_sync_client(client_unique_id, client_key, client_iv, client_port, client_ip) values({client_id}, '{reg['secret_key']}', '{reg['iv_key']}', {reg['port']}, '{reg['ip_address']}')"
@@ -281,6 +282,7 @@ class Sync:
                 'client_iv': reg['iv_key']
             }
             self.outbox.insert(outbox)
+            self.setAsProcessed(data['inbox_id'])
 
     def getData(self):
         self.syncDB.connect()

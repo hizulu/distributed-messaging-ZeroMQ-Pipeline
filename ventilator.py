@@ -21,7 +21,7 @@ class Ventilator:
     system = None
 
     def __init__(self):
-        self.maxRowPerWorker = env.VEN_MAX_ROW_PER_WORKER
+        # self.maxRowPerWorker = env.VEN_MAX_ROW_PER_WORKER
         self.workerAddress = env.VEN_WORKER_ADDR
         self.sinkAddr = env.SINK_ADDR
         self.context = zmq.Context()

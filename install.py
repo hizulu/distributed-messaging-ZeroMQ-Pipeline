@@ -140,13 +140,15 @@ else:
         'sender_id': 0,
         'data': data
     }
+    receiver = context.socket(zmq.PULL)
+    receiver.bind(f"tcp://{ipaddr}:{defaultSinkPort}")
     print("[/] Mengirim data ke master...OK")
     sender.send_json(encryptedPacket)
 
-    receiver = context.socket(zmq.PULL)
-    receiver.bind(f"tcp://{ipaddr}:5558")
-    print("[/] Menunggu balasan master", end="...")
+    # print("[/] Menunggu balasan master", end="...")
+
     while True:
+        print("HEHE")
         msg = receiver.recv_json()
         enc = AES256()
         plain = json.loads(enc.decrypt(ivKey, msg['data'], secretKey))
