@@ -10,7 +10,6 @@ class Instalation:
         # self.dbName = env.DB_NAME
         self.db = DatabaseConnection(
             dbhost, dbusername, dbpass, dbname)
-        self.db = db
 
     def setUniqueId(self, id):
         self.uniqueId = id

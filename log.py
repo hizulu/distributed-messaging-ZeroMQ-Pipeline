@@ -18,8 +18,7 @@ class Log:
 
     def getUnproceessLog(self):
         query = """
-            select * from tb_sync_outbox 
-            join tb_sync_client on tb_sync_client.client_unique_id = tb_sync_outbox.client_unique_id 
+            select * from tb_sync_outbox
             where is_sent = 0 and status = 'waiting' order by first_time_occur_at asc, priority asc limit {}""".format(self.rowLimit)
         result = self.db.executeFetchAll(sql=query)
         return result

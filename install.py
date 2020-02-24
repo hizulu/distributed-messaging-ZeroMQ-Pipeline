@@ -8,6 +8,11 @@ import zmq
 from encryption import AES256
 import time
 
+defaultSinkPort = 5558
+defaultWorkerPort = 5557
+defaultlogRowLimit = 0
+defaultProcRow = 0
+threadLimit = 4
 
 print("Install Syncronization Service")
 isMaster = input("[?] Apakah host ini adalah master? (y atau n): ")
@@ -54,11 +59,6 @@ ipaddr = ip_candidates[0]
 print(f"[/] Menggunakan `{ipaddr}` sebagai IP Address")
 
 ins = Instalation(dbHost, dbName, dbUser, dbPass)
-defaultSinkPort = 5558
-defaultWorkerPort = 5557
-defaultlogRowLimit = 0
-defaultProcRow = 0
-threadLimit = 4
 secretKey = ins.randomString()
 ivKey = ins.randomString()
 
@@ -113,17 +113,7 @@ else:
         else:
             break
 
-    # # memasukkan master ke tabel client
-    # print("[/] Memasukkan master ke tabel client", end="...")
-    # sql = f"""
-    #     insert into tb_sync_client(client_unique_id, client_key, client_iv, client_ip, client_port)
-    #     values(1, '{masterSecretKey}', '{masterIvKey}', '{masterip}', 5558)
-    # """
-    # inserted = db.executeCommit(sql)
-    # print("OK") if inserted else print("ERROR")
-    # #
-
-    print("[/] Registrasi client ke Master", end="...")
+    print("[/] Registrasi client ke Master")
     regData = f"secret_key:{secretKey}#iv_key:{ivKey}#ip_address:{ipaddr}#port:5558"
     # mengirim menggunakan worker
     context = zmq.Context()
@@ -139,7 +129,7 @@ else:
         'sync_token': 0,
         'first_time_occur_at': 0,
         'row_id': 0,
-        'table_name': '',
+        'table_name': 'REG',
         'msg_id': msg_id,
         'msg_type': "REG",
         'master_status': 0
@@ -150,20 +140,50 @@ else:
         'sender_id': 0,
         'data': data
     }
+    print("[/] Mengirim data ke master...OK")
     sender.send_json(encryptedPacket)
 
     receiver = context.socket(zmq.PULL)
     receiver.bind(f"tcp://{ipaddr}:5558")
+    print("[/] Menunggu balasan master", end="...")
     while True:
         msg = receiver.recv_json()
         enc = AES256()
         plain = json.loads(enc.decrypt(ivKey, msg['data'], secretKey))
         msg['data'] = plain[0]
         data = msg['data']
+        print(data)
         if (data['msg_type'] == 'REG'):
+            regData = data['query'].split('#')
+            reg = {}
+            for item in regData:
+                attributes = item.split(':')
+                reg[attributes[0]] = attributes[1]
 
+            if (reg['for'] != msg_id):
+                continue
+            else:
+                if (reg['status'] == 'OK'):
+                    print("OK")
+                    unique_id = reg['id']
+                    # memasukkan master ke tabel client
+                    print("[/] Memasukkan master ke tabel client", end="...")
+                    sql = f"""
+                        insert into tb_sync_client(client_unique_id, client_key, client_iv, client_ip, client_port)
+                        values(1, '{masterSecretKey}', '{masterIvKey}', '{masterip}', 5558)
+                    """
+                    inserted = db.executeCommit(sql)
+                    print("OK") if inserted else print("ERROR")
+                    #
 
-sys.exit()
+                    # initializing
+                    ins.setUniqueId(unique_id)
+                    ins.dropAllTrigger()
+                    ins.generateDefaultTrigger()
+                    ins.generateSyncTrigger()
+                    #
+                else:
+                    print(f"ERROR: {reg['reason']}")
 # cetak env
 env_file = open('env.py', 'w')
 env_file.write(f"MASTER_MODE={isMaster}\n")
