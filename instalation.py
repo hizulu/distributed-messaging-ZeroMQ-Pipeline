@@ -147,6 +147,53 @@ class Instalation:
         created = self.db.executeCommit(header + declaration + body + footer)
         return created
 
+    def _createAfterUpdateTrigger(self, tablename, columns):
+        triggername = f"after_update_{tablename}"
+        print(f"Creating `{triggername}`", end="...")
+        header = f"""CREATE TRIGGER `{triggername}` AFTER UPDATE ON `{tablename}`
+        FOR EACH ROW BEGIN
+        """
+
+        declaration = """
+        DECLARE update_query TEXT;
+        DECLARE tb VARCHAR(100);
+        DECLARE front_update TINYINT DEFAULT 0;
+        """
+        
+        body = f"""
+        SET update_query = "update {tablename} set ";
+        IF !(new.nama <=> old.nama) THEN
+            SET front_update = front_update + 1;
+            SET update_query = CONCAT(update_query, 'nama=', "'", new.nama, "'");
+        END IF;
+        
+        IF !(new.last_action_at <=> old.last_action_at) THEN
+            SET front_update = front_update + 1;
+            IF(front_update > 1) THEN
+                SET update_query = CONCAT(update_query, ",");
+            END IF;
+            SET update_query = CONCAT(update_query, 'last_action_at=', "'", new.last_action_at, "'");
+        END IF;
+        
+        IF !(new.sync_token <=> old.sync_token) THEN
+            SET front_update = front_update + 1;
+            IF(front_update > 1) THEN
+                SET update_query = CONCAT(update_query, ",");
+            END IF;
+            SET update_query = CONCAT(update_query, 'sync_token=', "'", new.sync_token, "'");
+        END IF;
+        
+        SET update_query = CONCAT(update_query, " where id=", new.id);
+        SET tb = 'tb_tes';
+        
+        INSERT INTO `tb_sync_changelog`(`query`, `table`, `type`, row_id, occur_at, first_time_occur_at, sync_token) VALUES(update_query, tb, 'UPD', new.id, UNIX_TIMESTAMP(), new.last_action_at, new.sync_token);
+        """
+
+        footer = "END;"
+
+        created = self.db.executeCommit(header + declaration + body + footer)
+        return created
+
     def generateSyncTrigger(self):
         print('--------------')
         print("Generate sync trigger")

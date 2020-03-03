@@ -1,5 +1,5 @@
 from DatabaseConnection import DatabaseConnection
-import env1 as env
+import env as env
 import sys
 from outbox import Outbox
 from systemlog import SystemLog
@@ -85,7 +85,7 @@ class Sync:
                 }
                 if(not self.inbox.insert(inbox)):
                     print(self.syncDB.getLastCommitError())
-            elif(env.MASTER_NODE):
+            elif(env.MASTER_MODE):
                 # master akan mengirim PK hasil insert ke
                 # slave pengirim pesan insert
                 msg = {
@@ -130,7 +130,7 @@ class Sync:
                 # update PK success
                 # cek pesan lain yang menggunakan PK lama
                 # update ke PK baru
-                if(not env.MASTER_NODE):
+                if(not env.MASTER_MODE):
                     check = "select * from tb_sync_outbox where is_sent=0 and (status = 'waiting' or status='canceled') and (msg_type = 'DEL' or msg_type='UPD') and row_id = {}"
 
                     res = self.syncDB.executeFetchAll(
@@ -167,7 +167,12 @@ class Sync:
                     "Sync.processPrimaryKey", json.dumps(self.syncDB.getLastCommitError()))
 
     def processUpdate(self, data):
-        print("UPD not yet support")
+        execute = self.syncDB.executeCommit(data['query'])
+        if (not execute):
+            print("ERROR")
+        else:
+            self.setAsProcessed(data['inbox_id'])
+            print("OK")
 
     def processDelete(self, data):
         # cek apakah ada inbox yang bertipe PRI
@@ -225,7 +230,7 @@ class Sync:
         return True
 
     def processReg(self, data):
-        if(env.MASTER_NODE):
+        if(env.MASTER_MODE):
             regData = data['query'].split('#')
             reg = {}
             for item in regData:
@@ -286,8 +291,9 @@ class Sync:
 
     def getData(self):
         self.syncDB.connect()
-        sql = "select * from tb_sync_inbox where is_process = 0 limit " + \
-            str(self.limitRow)
+        sql = "select * from tb_sync_inbox where is_process = 0"
+        if (self.limitRow > 0):
+            sql += f' {self.limitRow}'
         data = self.syncDB.executeFetchAll(sql, False)
         self.syncDB.close()
         return data
@@ -335,4 +341,4 @@ while True:
     else:
         print('Error')
         sys.exit()
-    sys.exit()
+    # sys.exit()

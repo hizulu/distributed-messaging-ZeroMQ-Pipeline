@@ -145,24 +145,25 @@ else:
     print("[/] Mengirim data ke master...OK")
     sender.send_json(encryptedPacket)
 
-    # print("[/] Menunggu balasan master", end="...")
+    # print("[/] Menunggu balasan master")
 
     while True:
-        print("HEHE")
+        print(".", end="")
         msg = receiver.recv_json()
         enc = AES256()
         plain = json.loads(enc.decrypt(ivKey, msg['data'], secretKey))
         msg['data'] = plain[0]
         data = msg['data']
-        print(data)
+        # print(data)
         if (data['msg_type'] == 'REG'):
             regData = data['query'].split('#')
             reg = {}
             for item in regData:
                 attributes = item.split(':')
                 reg[attributes[0]] = attributes[1]
-
-            if (reg['for'] != msg_id):
+            # print(reg)
+            # print(f"{msg_id} x {reg['for']}")
+            if (int(reg['for']) != msg_id):
                 continue
             else:
                 if (reg['status'] == 'OK'):
@@ -184,8 +185,10 @@ else:
                     ins.generateDefaultTrigger()
                     ins.generateSyncTrigger()
                     #
+                    break
                 else:
                     print(f"ERROR: {reg['reason']}")
+                    sys.exit()
 # cetak env
 env_file = open('env.py', 'w')
 env_file.write(f"MASTER_MODE={isMaster}\n")
@@ -197,7 +200,7 @@ env_file.write(f"DB_NAME='{dbName}'\n")
 env_file.write(f"UNIQUE_ID={unique_id}\n")
 env_file.write(f"SINK_ADDR='tcp://{ipaddr}:{defaultSinkPort}'\n")
 env_file.write(f"SECRET_KEY='{secretKey}'\n")
-env_file.write(f"SECRET_KEY='{ivKey}'\n")
+env_file.write(f"IV_KEY='{ivKey}'\n")
 env_file.write(f"LOG_ROW_LIMIT={defaultlogRowLimit}\n")
 env_file.write(f"VEN_WORKER_ADDR='tcp://*:{defaultWorkerPort}'\n")
 env_file.write(f"LIMIT_PROC_ROW={defaultProcRow}\n")

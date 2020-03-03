@@ -82,7 +82,7 @@ class Ventilator:
 
                     # filter DEL msg type
                     # jangan kirim pesan DEL jika row yang di DEL belum selesai
-                    if(not env.MASTER_NODE and item['msg_type'] == 'DEL'):
+                    if(not env.MASTER_MODE and item['msg_type'] == 'DEL'):
                         checkPRIQuery = """
                             select * from tb_sync_inbox where msg_type = 'PRI'
                             and is_process = 0 and status='waiting'
