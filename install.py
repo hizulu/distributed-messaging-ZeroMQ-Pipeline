@@ -24,14 +24,15 @@ if (isMaster != 'y' and isMaster != 'n'):
 isMaster = True if isMaster == 'y' else False
 
 
-if (not isMaster):
-    while True:
-        mode = int(input("[?] Pilih Mode(1 atau 2 Arah)? tulis angka saja: "))
-        if (mode > 2 or mode < 1):
-            print("[!] Input tidak sesuai. Masukkan `1` atau `2`")
-        else:
-            print(f"[/] Menggunakan Mode {mode} Arah")
-            break
+# if (not isMaster):
+#     while True:
+#         mode = int(input("[?] Pilih Mode(1 atau 2 Arah)? tulis angka saja: "))
+#         if (mode > 2 or mode < 1):
+#             print("[!] Input tidak sesuai. Masukkan `1` atau `2`")
+#         else:
+#             print(f"[/] Menggunakan Mode {mode} Arah")
+#             break
+mode = 2
 
 # db config
 while True:
