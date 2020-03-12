@@ -67,8 +67,8 @@ class Ventilator:
                         item['client_unique_id'], item['sync_token'], item['table_name'], item['msg_type'])
 
                 elif(item['msg_type'] == 'UPD'):
-                    isInsideInboxQuery = "select * from tb_sync_inbox where client_unique_id={} and row_id = {} and table_name = '{}' and msg_type='UPD' and md5(query) = '{}'".format(
-                        item['client_unique_id'], item['row_id'], item['table_name'], hashlib.md5(item['query'].encode()).hexdigest(), item['unix_timestamp_sync'])
+                    isInsideInboxQuery = "select * from tb_sync_inbox where client_unique_id={} and sync_token = '{}' and table_name = '{}' and msg_type='{}'".format(
+                        item['client_unique_id'], item['sync_token'], item['table_name'], item['msg_type'])
 
                 inbox = self.db.executeFetchAll(
                     isInsideInboxQuery)
