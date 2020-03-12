@@ -23,8 +23,9 @@ if (isMaster != 'y' and isMaster != 'n'):
 
 isMaster = True if isMaster == 'y' else False
 
-while True:
-    if (not isMaster):
+
+if (not isMaster):
+    while True:
         mode = int(input("[?] Pilih Mode(1 atau 2 Arah)? tulis angka saja: "))
         if (mode > 2 or mode < 1):
             print("[!] Input tidak sesuai. Masukkan `1` atau `2`")
