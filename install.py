@@ -23,6 +23,15 @@ if (isMaster != 'y' and isMaster != 'n'):
 
 isMaster = True if isMaster == 'y' else False
 
+while True:
+    if (not isMaster):
+        mode = int(input("[?] Pilih Mode(1 atau 2 Arah)? tulis angka saja: "))
+        if (mode > 2 or mode < 1):
+            print("[!] Input tidak sesuai. Masukkan `1` atau `2`")
+        else:
+            print(f"[/] Menggunakan Mode {mode} Arah")
+            break
+
 # db config
 while True:
     dbHost = input("[?] Masukkan Host DB: ")
@@ -167,15 +176,17 @@ else:
                 if (reg['status'] == 'OK'):
                     print("OK")
                     unique_id = reg['id']
-                    # memasukkan master ke tabel client
-                    print("[/] Memasukkan master ke tabel client", end="...")
-                    sql = f"""
-                        insert into tb_sync_client(client_unique_id, client_key, client_iv, client_ip, client_port)
-                        values(1, '{masterSecretKey}', '{masterIvKey}', '{masterip}', 5558)
-                    """
-                    inserted = db.executeCommit(sql)
-                    print("OK") if inserted else print("ERROR")
-                    #
+
+                    if (mode == 2):
+                        # memasukkan master ke tabel client
+                        print("[/] Memasukkan master ke tabel client", end="...")
+                        sql = f"""
+                            insert into tb_sync_client(client_unique_id, client_key, client_iv, client_ip, client_port)
+                            values(1, '{masterSecretKey}', '{masterIvKey}', '{masterip}', 5558)
+                        """
+                        inserted = db.executeCommit(sql)
+                        print("OK") if inserted else print("ERROR")
+                        #
 
                     # initializing
                     ins.setUniqueId(unique_id)
