@@ -51,6 +51,7 @@ sink = Sink(env.DB_HOST, env.DB_UNAME, env.DB_PASSWORD,
             env.DB_NAME, env.SINK_ADDR, env.SECRET_KEY, env.IV_KEY)
 while True:
     s = sink.recv_json()
+    # print(s)
     if ('error' in s):
         print("Invalid secret key or IV key")
     else:
@@ -76,7 +77,8 @@ while True:
                 "accepted-msg", "Execute Error: {}".format(checkMsg['error_data']['msg']))
 
         # insert message to db
-        if(accepted):
+        if (accepted):
+            # print(s['data'])
             insert = sink.inbox.insert(s['data'])
             if (not insert):
                 print(sink.db.getLastCommitError())
