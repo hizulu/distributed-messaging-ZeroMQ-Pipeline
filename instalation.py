@@ -103,14 +103,19 @@ class Instalation:
 
         declaration = """
         DECLARE auto_id BIGINT DEFAULT 0;
+        #DECLARE sync_id_temp BIGINT DEFAULT 0;
         """
 
         body = f"""
         SELECT IFNULL(MAX(log_id), 0)+1 INTO auto_id
         FROM tb_sync_changelog;
 
+        #SELECT IFNULL(MAX(sync_id), 0)+1 INTO sync_id_temp
+        #FROM {tablename};
+
+        #SET new.sync_id = sync_id_temp;
         IF new.sync_token IS NULL THEN
-            SET new.sync_token = HEX(AES_ENCRYPT(auto_id, '{self.uniqueId}'));
+            SET new.sync_token = CAST(CONCAT('{self.uniqueId}', auto_id) AS UNSIGNED);
             SET new.last_action_at = UNIX_TIMESTAMP();
         END IF;
         """
@@ -216,7 +221,7 @@ class Instalation:
         SELECT IFNULL(MAX(log_id), 0)+1 INTO auto_id
         FROM tb_sync_changelog;
 
-        SET new.sync_token = HEX(AES_ENCRYPT(auto_id, '1581193967'));
+        SET new.sync_token = CAST(CONCAT('{self.uniqueId}', auto_id) AS UNSIGNED);
         SET new.last_action_at = UNIX_TIMESTAMP();
         """
 
@@ -460,6 +465,12 @@ class Instalation:
             addSyncTokenQuery = f"alter table {tb['TABLE_NAME']} add sync_token varchar(100) after last_action_at"
             print('OK') if self.db.executeCommit(
                 addSyncTokenQuery) else print("ERROR")
+
+            # print(
+            #     f"Add `sync_id` column to `{tb['TABLE_NAME']}`", end="...")
+            # addSyncTokenQuery = f"alter table {tb['TABLE_NAME']} add sync_id int after sync_token"
+            # print('OK') if self.db.executeCommit(
+            #     addSyncTokenQuery) else print("ERROR")
 
 
 # autotrigger = Instalation("localhost", "db_coba", 'rama', 'ramapradana24')

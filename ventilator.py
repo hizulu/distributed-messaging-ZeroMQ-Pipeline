@@ -126,7 +126,9 @@ class Ventilator:
                     'query': item['query'],
                     'timestamp': item['created_at'].strftime("%Y-%m-%d %H:%M:%S")
                 }
-                self.outbox.update(data={'is_sent': 1, 'status': 'sent'}, where_clause={
+                nextRetryAt = datetime.datetime.now() + datetime.timedelta(seconds=30)
+                nextRetryAt = nextRetryAt.strftime('%Y-%m-%d %H:%M:%S')
+                self.outbox.update(data={'priority': 3, 'status': 'sent', 'retry_again_at': nextRetryAt}, where_clause={
                                    'outbox_id': item['outbox_id']})
                 self.sender.send_json(packet)
             else:

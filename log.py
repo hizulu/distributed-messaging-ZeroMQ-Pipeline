@@ -1,6 +1,7 @@
 import pymysql.cursors
 import env
 from DatabaseConnection import DatabaseConnection
+import datetime
 
 
 class Log:
@@ -17,9 +18,11 @@ class Log:
     # ///////////////////////////////////////////
 
     def getUnproceessLog(self):
-        query = """
+        query = f"""
             select * from tb_sync_outbox
-            where is_sent = 0 and status = 'waiting' order by first_time_occur_at asc, priority asc"""
+            where (is_sent = 0 and status = 'waiting') or
+            (status = 'sent' and retry_again_at <= now()) 
+            order by first_time_occur_at asc, priority asc"""
         if (env.LOG_ROW_LIMIT > 0):
             query += f' {env.LOG_ROW_LIMIT}'
         result = self.db.executeFetchAll(sql=query)

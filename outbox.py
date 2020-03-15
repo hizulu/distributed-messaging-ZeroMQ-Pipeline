@@ -7,6 +7,7 @@ import env
 class Outbox:
     def __init__(self, db=None):
         self.db = db
+        self.nextRetryAdditionalSecond = 30
 
     def insert(self, data):
         # primary key of table associated. primary key of receiver if ACK,
@@ -25,20 +26,26 @@ class Outbox:
             time.time())
         first_time_occur_at = data['first_time_occur_at'] if 'first_time_occur_at' in data else int(
             time.time())
-        dttime = datetime.datetime.utcfromtimestamp(
-            unix_timestamp).strftime('%Y-%m-%d %H:%M:%S')
+
+        time_at = datetime.datetime.utcfromtimestamp(
+            unix_timestamp)
+        dttime = time_at.strftime('%Y-%m-%d %H:%M:%S')
+        nextRetry = time_at + \
+            datetime.timedelta(seconds=self.nextRetryAdditionalSecond)
+        nextRetry = nextRetry.strftime('%Y-%m-%d %H:%M:%S')
+        print(f"time: {dttime} next: {nextRetry}")
         if (client_uid == 0):
             query = """
-                insert into tb_sync_outbox(row_id, table_name, msg_type, msg_id, query, client_unique_id, occur_at, first_time_occur_at, created_at, updated_at, priority, sync_token, client_ip, client_port, client_key, client_iv)
-                values("{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}")
-            """.format(rowId, table_name, msg_type, msg_id, string_query, client_uid, unix_timestamp, first_time_occur_at, dttime, dttime, priority, sync_token, data['client_ip'], data['client_port'], data['client_key'], data['client_iv'])
+                insert into tb_sync_outbox(row_id, table_name, msg_type, msg_id, query, client_unique_id, occur_at, first_time_occur_at, created_at, updated_at, priority, sync_token, client_ip, client_port, client_key, client_iv, retry_again_at)
+                values("{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}")
+            """ .format(rowId, table_name, msg_type, msg_id, string_query, client_uid, unix_timestamp, first_time_occur_at, dttime, dttime, priority, sync_token, data['client_ip'], data['client_port'], data['client_key'], data['client_iv'], nextRetry)
         else:
             query = """
-                insert into tb_sync_outbox(row_id, table_name, msg_type, msg_id, query, client_unique_id, occur_at, first_time_occur_at, created_at, updated_at, priority, sync_token)
-                values("{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}")
-            """.format(rowId, table_name, msg_type, msg_id, string_query, client_uid, unix_timestamp, first_time_occur_at, dttime, dttime, priority, sync_token)
+                insert into tb_sync_outbox(row_id, table_name, msg_type, msg_id, query, client_unique_id, occur_at, first_time_occur_at, created_at, updated_at, priority, sync_token, retry_agaim_at)
+                values("{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}")
+            """.format(rowId, table_name, msg_type, msg_id, string_query, client_uid, unix_timestamp, first_time_occur_at, dttime, dttime, priority, sync_token, nextRetry)
 
-        return self.db.executeCommit(sql=query)
+        # return self.db.executeCommit(sql=query)
 
     def update(self, data, where_clause):
         query = 'update tb_sync_outbox set '
@@ -66,3 +73,14 @@ class Outbox:
         exe = self.db.executeCommit(query)
         # print(self.db.getLastCommitError())
         return exe
+
+
+# out = Outbox()
+# out.insert(data={
+#     'row_id': 1,
+#     'table_name': "hehe",
+#     'msg_type': 'REG',
+#     'msg_id': 1,
+#     'query': 'hehehe',
+#     'client_unique_id': 12
+# })
