@@ -200,27 +200,30 @@ else:
                     ins.generateSyncTrigger()
                     #
 
-                    # send ACK
-                    jsonPacket = {
-                        'query': data['msg_id'],
-                        'client_unique_id': 1,
-                        'row_id': 0,
-                        'table_name': 'REG',
-                        'msg_id': 0,
-                        'msg_type': "ACK",
-                    },
-                    data = enc.encrypt(json.dumps(jsonPacket),
-                                       masterSecretKey, masterIvKey)
-                    # data = jsonPacket
-                    encryptedPacket = {
-                        'sender_id': unique_id,
-                        'data': data
-                    }
-                    sender.send_json(encryptedPacket)
                     break
                 else:
                     print(f"ERROR: {reg['reason']}")
                     sys.exit()
+
+        # send ACK
+        jsonPacket = {
+            'query': data['msg_id'],
+            'client_unique_id': 1,
+            'row_id': 0,
+            'table_name': 'REG',
+            'msg_id': 0,
+            'msg_type': "ACK",
+            'master_status': 0
+        },
+        data = enc.encrypt(json.dumps(jsonPacket),
+                           masterSecretKey, masterIvKey)
+        # data = jsonPacket
+        encryptedPacket = {
+            'sender_id': unique_id,
+            'data': data
+        }
+        sender.send_json(encryptedPacket)
+
 # cetak env
 env_file = open('env.py', 'w')
 env_file.write(f"MASTER_MODE={isMaster}\n")
