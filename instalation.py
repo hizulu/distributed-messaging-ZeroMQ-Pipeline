@@ -13,6 +13,7 @@ class Instalation:
 
     def setUniqueId(self, id):
         self.uniqueId = id
+        self.ignoreColums = ['sync_token', 'last_action_at']
 
     def getTables(self):
         query = """
@@ -163,40 +164,34 @@ class Instalation:
         DECLARE update_query TEXT;
         DECLARE tb VARCHAR(100);
         DECLARE front_update TINYINT DEFAULT 0;
+        DECLARE update_count TINYINT DEFAULT 0;
         """
 
         col = [col['COLUMN_NAME']
-               for col in columns if col['COLUMN_KEY'] != "PRI"]
+               for col in columns if col['COLUMN_KEY'] != "PRI" and col['COLUMN_NAME'] not in self.ignoreColums]
         pk = columns[0]['COLUMN_NAME']
 
         body = f"""
         SET update_query := "update {tablename} set ";"""
 
-        i = 0
         for c in col:
-            if i == 0:
-                body += f"""
+            body += f"""
                 IF !(new.{c} <=> old.{c}) THEN
                     SET front_update = front_update + 1;
-                    SET update_query = CONCAT(update_query, '{c}=', "'", new.{c}, "'");
-                END IF;
-                """
-            else:
-                body += f"""
-                IF !(new.{c} <=> old.{c}) THEN
-                    SET front_update = front_update + 1;
+                    SET update_count = update_count + 1;
                     IF(front_update > 1) THEN
                         SET update_query = CONCAT(update_query, ",");
                     END IF;
                     SET update_query = CONCAT(update_query, '{c}=', "'", new.{c}, "'");
                 END IF;
                 """
-            i += 1
         body += f"""
         SET update_query := CONCAT(update_query, " where {pk}=", new.{pk});
         SET tb := '{tablename}';
 
-        INSERT INTO `tb_sync_changelog`(`query`, `table`, `type`, row_id, occur_at, first_time_occur_at, sync_token) VALUES(update_query, tb, 'UPD', new.{pk}, UNIX_TIMESTAMP(), new.last_action_at, new.sync_token);
+        IF update_count > 0 THEN
+            INSERT INTO `tb_sync_changelog`(`query`, `table`, `type`, row_id, occur_at, first_time_occur_at, sync_token) VALUES(update_query, tb, 'UPD', new.{pk}, UNIX_TIMESTAMP(), new.last_action_at, new.sync_token);
+        END IF;
         """
 
         footer = "END;"
