@@ -160,7 +160,10 @@ else:
         print(".", end="")
         msg = receiver.recv_json()
         enc = AES256()
-        plain = json.loads(enc.decrypt(ivKey, msg['data'], secretKey))
+        try:
+            plain = json.loads(enc.decrypt(ivKey, msg['data'], secretKey))
+        except json.decoder.JSONDecodeError as e:
+            continue
         msg['data'] = plain[0]
         data = msg['data']
         # print(data)
