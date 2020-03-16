@@ -199,8 +199,6 @@ else:
                     ins.generateDefaultTrigger()
                     ins.generateSyncTrigger()
                     #
-
-                    break
                 else:
                     print(f"ERROR: {reg['reason']}")
                     sys.exit()
@@ -223,7 +221,7 @@ else:
             'data': data
         }
         sender.send_json(encryptedPacket)
-
+        break
 # cetak env
 env_file = open('env.py', 'w')
 env_file.write(f"MASTER_MODE={isMaster}\n")
