@@ -19,6 +19,7 @@ class Sync:
         self.systemlog = SystemLog()
         self.inbox = Inbox(self.syncDB)
         self.outbox = Outbox(self.syncDB)
+        self.clientIdStartFrom = 10
 
     def getClient(self):
         sql = "select * from tb_sync_client"
@@ -230,7 +231,8 @@ class Sync:
         return True
 
     def processReg(self, data):
-        if(env.MASTER_MODE):
+        if (env.MASTER_MODE):
+            time.sleep(0.2)
             regData = data['query'].split('#')
             reg = {}
             for item in regData:
@@ -256,7 +258,12 @@ class Sync:
                 self.outbox.insert(outbox)
                 self.setAsProcessed(data['inbox_id'])
             else:
-                client_id = int(time.time())
+                client_id_check_q = "select ifnull(max(client_unique_id), 0) as id from tb_sync_client"
+                client_id = self.syncDB.executeFetchOne(client_id_check_q)
+                if (client_id['data']['id'] == 0):
+                    client_id = self.clientIdStartFrom
+                else:
+                    client_id = client_id['data']['id'] + 1
                 sql = f"insert into tb_sync_client(client_unique_id, client_key, client_iv, client_port, client_ip) values({client_id}, '{reg['secret_key']}', '{reg['iv_key']}', {reg['port']}, '{reg['ip_address']}')"
 
                 inserted = self.syncDB.executeCommit(sql)
@@ -273,6 +280,7 @@ class Sync:
                     }
                     self.outbox.insert(outbox)
                     self.setAsProcessed(data['inbox_id'])
+                    print("OK")
         else:
             outbox = {
                 'row_id': 0,
@@ -288,6 +296,7 @@ class Sync:
             }
             self.outbox.insert(outbox)
             self.setAsProcessed(data['inbox_id'])
+            print('OK')
 
     def getData(self):
         self.syncDB.connect()
@@ -300,10 +309,10 @@ class Sync:
 
     def setAsProcessed(self, id):
         set = self.inbox.update(
-            data={'is_process': 1}, where_clause={'inbox_id': id})
+            data={'status': 'done'}, where_clause={'inbox_id': id})
         # query = 'update tb_sync_inbox set is_process=1 where inbox_id = {}'.format(
         #     id)
-        print(set)
+        # print(set)
 
     def reply(self, code, msg):
         return True
