@@ -291,7 +291,7 @@ class Sync:
 
     def getData(self):
         self.syncDB.connect()
-        sql = "select * from tb_sync_inbox where is_process = 0"
+        sql = "select * from tb_sync_inbox where status = 'waiting'"
         if (self.limitRow > 0):
             sql += f' {self.limitRow}'
         data = self.syncDB.executeFetchAll(sql, False)
