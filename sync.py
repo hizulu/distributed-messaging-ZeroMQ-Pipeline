@@ -101,7 +101,7 @@ class Sync:
                 print(tes)
                 if(not tes):
                     print(self.syncDB.getLastCommitError())
-            self.setAsProcessed(data['inbox_id'])
+            self.setAsProcessed(data['inbox_id'], 'need_pk_update')
         else:
             # set priority menjadi 3
             self.setPriority(data['inbox_id'], 'tb_sync_inbox', 3)
@@ -132,7 +132,7 @@ class Sync:
                 # cek pesan lain yang menggunakan PK lama
                 # update ke PK baru
                 if(not env.MASTER_MODE):
-                    check = "select * from tb_sync_outbox where is_sent=0 and (status = 'waiting' or status='canceled') and (msg_type = 'DEL' or msg_type='UPD') and row_id = {}"
+                    check = "select * from tb_sync_outbox where (status = 'waiting' or status='canceled') and (msg_type = 'DEL' or msg_type='UPD') and row_id = {}"
 
                     res = self.syncDB.executeFetchAll(
                         check.format(data['row_id']))
@@ -182,7 +182,7 @@ class Sync:
         # jika tidak ada lakukan delete seperti biasa
         checkQuery = """
             select count(inbox_id) as total from tb_sync_inbox where msg_type = 'PRI'
-            and is_process = 0 and status = 'waiting'
+            and and status = 'waiting'
             and table_name = '{}'
             and query = '{}'
         """
@@ -208,7 +208,6 @@ class Sync:
 
     def processAck(self, data):
         ack = self.outbox.update(data={
-            'is_arrived': 1,
             'status': 'arrived'
         }, where_clause={
             'outbox_id': data['query']
@@ -218,7 +217,7 @@ class Sync:
         # ack = self.syncDB.executeCommit(ackQuery)
         if(not ack):
             self.setPriority(data['inbox_id'], 'tb_sync_inbox', 3)
-            self.outbox.update(data={'is_error': 1}, where_clause={
+            self.outbox.update(data={'status': 'error'}, where_clause={
                                'outbox_id': data['msg_id']})
             # errorQuery = 'update tb_sync_outbox set is_error=1 where outbox_id = {}'.format(
             #     data['msg_id'])
@@ -307,9 +306,9 @@ class Sync:
         self.syncDB.close()
         return data
 
-    def setAsProcessed(self, id):
+    def setAsProcessed(self, id, status='done'):
         set = self.inbox.update(
-            data={'status': 'done'}, where_clause={'inbox_id': id})
+            data={'status': status}, where_clause={'inbox_id': id})
         # query = 'update tb_sync_inbox set is_process=1 where inbox_id = {}'.format(
         #     id)
         # print(set)

@@ -128,7 +128,11 @@ class Ventilator:
                 }
                 nextRetryAt = datetime.datetime.now() + datetime.timedelta(seconds=30)
                 nextRetryAt = nextRetryAt.strftime('%Y-%m-%d %H:%M:%S')
-                self.outbox.update(data={'priority': 3, 'status': 'sent', 'retry_again_at': nextRetryAt}, where_clause={
+                if (item['msg_type'] == 'ACK'):
+                    status = 'arrived'
+                else:
+                    status = 'sent'
+                self.outbox.update(data={'priority': 3, 'status': status, 'retry_again_at': nextRetryAt}, where_clause={
                                    'outbox_id': item['outbox_id']})
                 self.sender.send_json(packet)
             else:
