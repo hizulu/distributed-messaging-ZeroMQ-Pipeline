@@ -127,13 +127,16 @@ class Sync:
             update = self.syncDB.executeCommit(sql.format(
                 data['table_name'], primary_key, data['query'], primary_key, data['row_id']))
 
-            if(update):
+            if (update):
+                # update inbox set done
+                query = f"update tb_sync_inbox set status = 'done' where msg_type = 'INS' and row_id={data['row_id']} and table_name = '{data['table_name']}'"
+                if (not self.syncDB.executeCommit(query)):
+                    print('GAGAL SET DONE')
                 # update PK success
                 # cek pesan lain yang menggunakan PK lama
                 # update ke PK baru
-                if(not env.MASTER_MODE):
+                if (not env.MASTER_MODE):
                     check = "select * from tb_sync_outbox where (status = 'waiting' or status='canceled') and (msg_type = 'DEL' or msg_type='UPD') and row_id = {}"
-
                     res = self.syncDB.executeFetchAll(
                         check.format(data['row_id']))
                     if(res['execute_status']):
