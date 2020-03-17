@@ -20,7 +20,7 @@ class Log:
     def getUnproceessLog(self):
         query = f"""
             select * from tb_sync_outbox
-            where (is_sent = 0 and status = 'waiting') or
+            where (status = 'waiting') or
             (status = 'sent' and retry_again_at <= now()) 
             order by first_time_occur_at asc, priority asc"""
         if (env.LOG_ROW_LIMIT > 0):
