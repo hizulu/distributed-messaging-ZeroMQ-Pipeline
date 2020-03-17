@@ -124,6 +124,7 @@ class Ventilator:
                     'sync_token': item['sync_token'],
                     'first_time_occur_at': item['first_time_occur_at'],
                     'query': item['query'],
+                    'priority': item['priority'],
                     'timestamp': item['created_at'].strftime("%Y-%m-%d %H:%M:%S")
                 }
                 nextRetryAt = datetime.datetime.now() + datetime.timedelta(seconds=30)
