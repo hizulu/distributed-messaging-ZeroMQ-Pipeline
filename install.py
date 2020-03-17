@@ -141,7 +141,8 @@ else:
         'table_name': 'REG',
         'msg_id': msg_id,
         'msg_type': "REG",
-        'master_status': 0
+        'master_status': 0,
+        'priority': 1
     },
     data = enc.encrypt(json.dumps(jsonPacket), masterSecretKey, masterIvKey)
     # data = jsonPacket
@@ -211,7 +212,8 @@ else:
             'table_name': 'REG',
             'msg_id': 0,
             'msg_type': "ACK",
-            'master_status': 0
+            'master_status': 0,
+            'priority': 1
         },
         data = enc.encrypt(json.dumps(jsonPacket),
                            masterSecretKey, masterIvKey)

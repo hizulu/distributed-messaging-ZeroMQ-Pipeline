@@ -56,6 +56,7 @@ while True:
         'table_name': s['table_name'],
         'msg_id': s['msg_id'],
         'msg_type': s['msg_type'],
+        'priority': s['priority'],
         'master_status': 1 if env.MASTER_MODE == True else 0
     },
     data = enc.encrypt(json.dumps(jsonPacket), s['client_key'], s['client_iv'])

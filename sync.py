@@ -82,7 +82,8 @@ class Sync:
                     'msg_id': 0,
                     'query': data['row_id'],
                     'client_unique_id': 0,
-                    'master_status': 0
+                    'master_status': 0,
+                    'priority': 1
                 }
                 if(not self.inbox.insert(inbox)):
                     print(self.syncDB.getLastCommitError())
@@ -96,12 +97,13 @@ class Sync:
                     'query': rowId,  # receiver outbox_id
                     'client_unique_id': data['client_unique_id'],
                     'msg_id': 0,
+                    'priority': 1
                 }
                 tes = self.outbox.insert(msg)
-                print(tes)
+                # print(tes)
                 if(not tes):
                     print(self.syncDB.getLastCommitError())
-            self.setAsProcessed(data['inbox_id'], 'need_pk_update')
+            self.setAsProcessed(data['inbox_id'])
         else:
             # set priority menjadi 3
             self.setPriority(data['inbox_id'], 'tb_sync_inbox', 3)
@@ -129,7 +131,7 @@ class Sync:
 
             if (update):
                 # update inbox set done
-                query = f"update tb_sync_inbox set status = 'done' where msg_type = 'INS' and row_id={data['row_id']} and table_name = '{data['table_name']}'"
+                query = f"update tb_sync_outbox set status = 'done' where msg_type = 'INS' and row_id={data['row_id']} and table_name = '{data['table_name']}'"
                 if (not self.syncDB.executeCommit(query)):
                     print('GAGAL SET DONE')
                 # update PK success
@@ -210,8 +212,17 @@ class Sync:
                         self.syncDB.getLastCommitError()['msg']))
 
     def processAck(self, data):
+
+        obox = self.syncDB.executeFetchOne(
+            f"select * from tb_sync_outbox where outbox_id = {data['query']}")
+
+        if (outbox['data']['msg_type'] == 'INS'):
+            status = 'need_pk_update'
+        else:
+            status = 'arrived'
+
         ack = self.outbox.update(data={
-            'status': 'arrived'
+            'status': status
         }, where_clause={
             'outbox_id': data['query']
         })
@@ -315,9 +326,6 @@ class Sync:
         # query = 'update tb_sync_inbox set is_process=1 where inbox_id = {}'.format(
         #     id)
         # print(set)
-
-    def reply(self, code, msg):
-        return True
 
 
 sync = Sync()
