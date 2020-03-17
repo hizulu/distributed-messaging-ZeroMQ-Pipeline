@@ -90,20 +90,20 @@ while True:
             # insert = sink.db.executeCommit(autoconnect=False, sql=sql.format(
             #     s['data']['row_id'], s['data']['table_name'], s['data']['msg_id'], s['data']['data'], s['data']['msg_type'], s['data']['sender_id'], s['data']['master_status'], s['data']['unix_timestamp']))
             print('accepted')
-
-            # send back which message is received using worker
-            # only reply non-ACK msg
-            if(s['data']['msg_type'] != 'ACK' and s['data']['msg_type'] != 'REG'):
-                data = s['data']
-                sink.outbox.insert(data={
-                    'row_id': 0,
-                    'table_name': data['table_name'],
-                    'msg_type': 'ACK',
-                    'query': data['msg_id'],
-                    'client_unique_id': data['client_unique_id'],
-                    'msg_id': 0,
-                    'priority': 1
-                })
         else:
             print('rejected')
+
+        # send back which message is received using worker
+        # only reply non-ACK msg
+        if(s['data']['msg_type'] != 'ACK' and s['data']['msg_type'] != 'REG'):
+            data = s['data']
+            sink.outbox.insert(data={
+                'row_id': 0,
+                'table_name': data['table_name'],
+                'msg_type': 'ACK',
+                'query': data['msg_id'],
+                'client_unique_id': data['client_unique_id'],
+                'msg_id': 0,
+                'priority': 1
+            })
     # print("end time: {}".format(int(round(time.time() * 1000))))
