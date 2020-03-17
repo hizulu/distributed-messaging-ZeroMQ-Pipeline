@@ -85,7 +85,7 @@ class Ventilator:
                     if(not env.MASTER_MODE and item['msg_type'] == 'DEL'):
                         checkPRIQuery = """
                             select * from tb_sync_inbox where msg_type = 'PRI'
-                            and is_process = 0 and status='waiting'
+                            and status='waiting'
                             and table_name = '{}' and row_id = '{}'
                         """
                         checkPRIRes = self.db.executeFetchAll(

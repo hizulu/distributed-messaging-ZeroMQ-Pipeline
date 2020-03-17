@@ -187,7 +187,7 @@ class Sync:
         # jika tidak ada lakukan delete seperti biasa
         checkQuery = """
             select count(inbox_id) as total from tb_sync_inbox where msg_type = 'PRI'
-            and and status = 'waiting'
+            and status = 'waiting'
             and table_name = '{}'
             and query = '{}'
         """
