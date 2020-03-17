@@ -216,7 +216,7 @@ class Sync:
         obox = self.syncDB.executeFetchOne(
             f"select * from tb_sync_outbox where outbox_id = {data['query']}")
 
-        if (outbox['data']['msg_type'] == 'INS'):
+        if (obox['data']['msg_type'] == 'INS'):
             status = 'need_pk_update'
         else:
             status = 'arrived'
