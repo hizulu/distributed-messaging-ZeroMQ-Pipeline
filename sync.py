@@ -63,6 +63,7 @@ class Sync:
         self.sendStatusUpdate(data, 'PROC')
 
         insert = self.syncDB.executeCommit(data['query'])
+        rowId = self.syncDB.lastRowId
 
         if (insert):
             # hanya master yang mengirim NEEDPK ke slave
@@ -70,7 +71,6 @@ class Sync:
                 self.sendStatusUpdate(data, 'NEEDPK')
 
             print('done')
-            rowId = self.syncDB.lastRowId
 
             # set result primary key to table inbox
             insert = self.inbox.update(data={
