@@ -137,7 +137,7 @@ class Sync:
             update = self.syncDB.executeCommit(sql.format(
                 data['table_name'], primary_key, data['query'], primary_key, data['row_id']))
 
-        if (update):
+            if (update):
                 # set status outbox menjadi done
                 if (not env.MASTER_MODE and data['msg_id'] != 0):
                     # pesan PRI yang diterima dari master
