@@ -59,8 +59,16 @@ class Sync:
 
     def processInsert(self, data):
         print('Processing inbox: {}'.format(data['inbox_id']), end=": ")
+        # mengirim bahwa pesan sedang di proses
+        self.sendStatusUpdate(data, 'PROC')
+
         insert = self.syncDB.executeCommit(data['query'])
-        if(insert):
+
+        if (insert):
+            # hanya master yang mengirim NEEDPK ke slave
+            if(env.MASTER_MODE):
+                self.sendStatusUpdate(data, 'NEEDPK')
+
             print('done')
             rowId = self.syncDB.lastRowId
 
@@ -129,7 +137,16 @@ class Sync:
             update = self.syncDB.executeCommit(sql.format(
                 data['table_name'], primary_key, data['query'], primary_key, data['row_id']))
 
-            if (update):
+        if (update):
+                # set status outbox menjadi done
+                if (not env.MASTER_MODE and data['msg_id'] != 0):
+                    # pesan PRI yang diterima dari master
+                    updateQ = f"update tb_sync_outbox set status='done' where table_name='{data['table_name']}' and msg_type='INS' and row_id = {data['row_id']}"
+                    self.syncDB.executeCommit(updateQ)
+                else:
+                    # pesan PRI di generate oleh slave
+                    self.sendStatusUpdate(data, 'DONE')
+
                 # update inbox set done
                 query = f"update tb_sync_outbox set status = 'done' where msg_type = 'INS' and row_id={data['row_id']} and table_name = '{data['table_name']}'"
                 if (not self.syncDB.executeCommit(query)):
@@ -173,14 +190,17 @@ class Sync:
                     "Sync.processPrimaryKey", json.dumps(self.syncDB.getLastCommitError()))
 
     def processUpdate(self, data):
+        self.sendStatusUpdate(data, "PROC")
         execute = self.syncDB.executeCommit(data['query'])
         if (not execute):
             print("ERROR")
         else:
             self.setAsProcessed(data['inbox_id'])
+            self.sendStatusUpdate(data, "DONE")
             print("OK")
 
     def processDelete(self, data):
+        self.sendStatusUpdate(data, "PROC")
         # cek apakah ada inbox yang bertipe PRI
         # berdasarkan primari key yang masuk
         # jika ada mata update inbox tersebut jadi terproses
@@ -205,6 +225,7 @@ class Sync:
 
                 if(delete):
                     print('done')
+                    self.sendStatusUpdate(data, "DONE")
                     self.setAsProcessed(data['inbox_id'])
                 else:
                     self.setPriority(data['inbox_id'], 'tb_sync_inbox', 3)
@@ -215,17 +236,18 @@ class Sync:
 
         obox = self.syncDB.executeFetchOne(
             f"select * from tb_sync_outbox where outbox_id = {data['query']}")
+        ack = True
+        if(obox['data']):
+            if (obox['data']['msg_type'] == 'INS'):
+                status = 'need_pk_update'
+            else:
+                status = 'arrived'
 
-        if (obox['data']['msg_type'] == 'INS'):
-            status = 'need_pk_update'
-        else:
-            status = 'arrived'
-
-        ack = self.outbox.update(data={
-            'status': status
-        }, where_clause={
-            'outbox_id': data['query']
-        })
+            ack = self.outbox.update(data={
+                'status': status
+            }, where_clause={
+                'outbox_id': data['query']
+            })
         # ackQuery = "update tb_sync_outbox set is_arrived=1, status='arrived' where outbox_id = {}".format(
         #     data['query'])
         # ack = self.syncDB.executeCommit(ackQuery)
@@ -313,7 +335,7 @@ class Sync:
 
     def getData(self):
         self.syncDB.connect()
-        sql = "select * from tb_sync_inbox where status = 'waiting' order by priority asc"
+        sql = "select * from tb_sync_inbox where status = 'waiting' order by priority asc, inbox_id asc"
         if (self.limitRow > 0):
             sql += f' {self.limitRow}'
         data = self.syncDB.executeFetchAll(sql, False)
@@ -327,6 +349,17 @@ class Sync:
         #     id)
         # print(set)
 
+    def sendStatusUpdate(self, data, status):
+        return self.outbox.insert({
+            'row_id': data['row_id'],  # local row id
+            'table_name': data['table_name'],
+            'msg_type': status,
+            'query': data['msg_id'],  # receiver outbox_id
+            'client_unique_id': data['client_unique_id'],
+            'msg_id': 0,
+            'priority': 1
+        })
+
 
 sync = Sync()
 # sync.setPriority(2677, 'tb_sync_outbox', 2)
@@ -337,7 +370,11 @@ while True:
     if(inbox['execute_status']):
         if(inbox['data']):
             for item in inbox['data']:
+                # proses pesan selain INS, UPD dan DEL terlebih dahulu
+                # jgn proses pesan utama jika masih ada pesan INS UPD DEL yang belum selesai
 
+                # jika proses adalah INS UPD DEL, lakukan pengecekan pesan tertunda
+                delayMsgInboxQ = "select count(*) from tb_sync_inbox where status "
                 print(
                     "[{}] -> #{}".format(datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S"), item['msg_id']), end=" ")
                 msgType = item['msg_type']
