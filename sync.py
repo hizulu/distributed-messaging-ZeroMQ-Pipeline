@@ -139,13 +139,13 @@ class Sync:
 
             if (update):
                 # set status outbox menjadi done
-                if (not env.MASTER_MODE and data['msg_id'] != 0):
+                if (data['msg_id'] == 0 and data['client_unique_id'] == 0):
+                    # pesan PRI di generate oleh slave
+                    self.sendStatusUpdate(data, 'DONE')
+                else:
                     # pesan PRI yang diterima dari master
                     updateQ = f"update tb_sync_outbox set status='done' where table_name='{data['table_name']}' and msg_type='INS' and row_id = {data['row_id']}"
                     self.syncDB.executeCommit(updateQ)
-                else:
-                    # pesan PRI di generate oleh slave
-                    self.sendStatusUpdate(data, 'DONE')
 
                 # update inbox set done
                 query = f"update tb_sync_outbox set status = 'done' where msg_type = 'INS' and row_id={data['row_id']} and table_name = '{data['table_name']}'"
