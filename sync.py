@@ -89,7 +89,7 @@ class Sync:
                     'msg_type': 'PRI',
                     'msg_id': 0,
                     'query': data['row_id'],
-                    'client_unique_id': 0,
+                    'client_unique_id': data['client_unique_id'],
                     'master_status': 0,
                     'priority': 1
                 }
@@ -139,7 +139,7 @@ class Sync:
 
             if (update):
                 # set status outbox menjadi done
-                if (data['msg_id'] == 0 and data['client_unique_id'] == 0):
+                if (data['msg_id'] == 0):
                     # pesan PRI di generate oleh slave
                     self.sendStatusUpdate(data, 'DONE')
                 else:
