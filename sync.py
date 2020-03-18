@@ -141,7 +141,10 @@ class Sync:
                 # set status outbox menjadi done
                 if (data['msg_id'] == 0):
                     # pesan PRI di generate oleh slave
-                    self.sendStatusUpdate(data, 'DONE')
+                    # mengambil pesan INS
+                    insMsg = self.syncDB.executeFetchOne(
+                        f"select * from tb_sync_inbox where row_id={data['row_id']} and msg_type='INS' and table_name='{data['table_name']}'")
+                    self.sendStatusUpdate(insMsg['data'], 'DONE')
                 else:
                     # pesan PRI yang diterima dari master
                     updateQ = f"update tb_sync_outbox set status='done' where table_name='{data['table_name']}' and msg_type='INS' and row_id = {data['row_id']}"
@@ -403,14 +406,13 @@ while True:
                     sync.processReg(item)
                 elif (msgType == 'PROC'):
                     print(sync.updateOutboxStatus(
-                        item['query'], "processing", item['inbox']))
-                    sys.exit()
+                        item['query'], "processing", item['inbox_id']))
                 elif (msgType == 'NEEDPK'):
                     print(sync.updateOutboxStatus(
-                        item['query'], "need_pk_update", item['inbox']))
+                        item['query'], "need_pk_update", item['inbox_id']))
                 elif (msgType == 'DONE'):
                     print(sync.updateOutboxStatus(
-                        item['query'], "done", item['inbox']))
+                        item['query'], "done", item['inbox_id']))
                 else:
                     sync.syncDB.insError("Msg type not found for id=" +
                                          str(item['inbox_id']))
