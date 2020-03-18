@@ -313,7 +313,7 @@ class Sync:
 
     def getData(self):
         self.syncDB.connect()
-        sql = "select * from tb_sync_inbox where status = 'waiting'"
+        sql = "select * from tb_sync_inbox where status = 'waiting' order by priority asc"
         if (self.limitRow > 0):
             sql += f' {self.limitRow}'
         data = self.syncDB.executeFetchAll(sql, False)
@@ -337,6 +337,7 @@ while True:
     if(inbox['execute_status']):
         if(inbox['data']):
             for item in inbox['data']:
+
                 print(
                     "[{}] -> #{}".format(datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S"), item['msg_id']), end=" ")
                 msgType = item['msg_type']
