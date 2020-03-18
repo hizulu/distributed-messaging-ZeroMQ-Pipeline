@@ -360,12 +360,16 @@ class Sync:
             'priority': 1
         })
 
-    def updateOutboxStatus(self, id, status):
-        return self.outbox.update({
+    def updateOutboxStatus(self, id, status, inbox_id):
+        upd = self.outbox.update({
             'status': status
         }, {
             'outbox_id': id
         })
+        if (upd):
+            self.setAsProcessed(inbox_id)
+        else:
+            self.setPriority(inbox_id, 'tb_sync_inbox', 3)
 
 
 sync = Sync()
@@ -398,11 +402,15 @@ while True:
                 elif (msgType == 'REG'):
                     sync.processReg(item)
                 elif (msgType == 'PROC'):
-                    sync.updateOutboxStatus(item['query'], "processing")
+                    print(sync.updateOutboxStatus(
+                        item['query'], "processing", item['inbox']))
+                    sys.exit()
                 elif (msgType == 'NEEDPK'):
-                    sync.updateOutboxStatus(item['query'], "need_pk_update")
+                    print(sync.updateOutboxStatus(
+                        item['query'], "need_pk_update", item['inbox']))
                 elif (msgType == 'DONE'):
-                    sync.updateOutboxStatus(item['query'], "done")
+                    print(sync.updateOutboxStatus(
+                        item['query'], "done", item['inbox']))
                 else:
                     sync.syncDB.insError("Msg type not found for id=" +
                                          str(item['inbox_id']))
