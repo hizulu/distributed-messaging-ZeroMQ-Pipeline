@@ -144,7 +144,7 @@ class Instalation:
         body = f"""
         SET qry := old.{pk};
         SET tb := "{tablename}";
-        SET time_at := UNIX_TIMESTAMP(NOW(3))
+        SET time_at := UNIX_TIMESTAMP(NOW(3));
 
         INSERT INTO `tb_sync_changelog`(`query`, `table`, `type`, row_id, occur_at, first_time_occur_at, sync_token)
         VALUES(qry, tb, 'DEL', old.{pk}, time_at, time_at, old.sync_token);
@@ -188,10 +188,12 @@ class Instalation:
                 END IF;
                 """
         body += f"""
-        SET update_query := CONCAT(update_query, " where {pk}=", new.{pk});
+       
         SET tb := '{tablename}';
 
         IF update_count > 0 THEN
+            SET update_query := CONCAT(update_query, ",last_action_at='", new.last_action_at, "',", "sync_token='", new.sync_token, "'");	
+            SET update_query := CONCAT(update_query, " where {pk}=", new.{pk});
             INSERT INTO `tb_sync_changelog`(`query`, `table`, `type`, row_id, occur_at, first_time_occur_at, sync_token) VALUES(update_query, tb, 'UPD', new.{pk}, UNIX_TIMESTAMP(NOW(3)), new.last_action_at, new.sync_token);
         END IF;
         """

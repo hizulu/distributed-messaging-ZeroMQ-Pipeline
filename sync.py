@@ -196,15 +196,22 @@ class Sync:
         self.sendStatusUpdate(data, "PROC")
 
         # cek apakah pesan ini lebih baru dibantingkan data sekarnag
-        data = self.syncDB.executeFetchOne(f"select * from {data['table_name']} where {self._getPrimaryKeyColumn(data['table_name'])}={data['row_id']}")
-        print(data)
-        execute = self.syncDB.executeCommit(data['query'])
-        if (not execute):
-            print("ERROR")
+        primary_key = self._getPrimaryKeyColumn(data['table_name'])
+        row_data = self.syncDB.executeFetchOne(
+            f"select * from {data['table_name']} where {primary_key}={data['row_id']}")
+        if (row_data['data']['last_action_at'] < data['first_time_occur_at']):
+            # data yang di proses adalah data baru
+            execute = self.syncDB.executeCommit(data['query'])
+            if (not execute):
+                print("ERROR")
+            else:
+                self.setAsProcessed(data['inbox_id'])
+                self.sendStatusUpdate(data, "DONE")
+                print("OK")
         else:
+            # data yang di proses adlaah data lama
             self.setAsProcessed(data['inbox_id'])
             self.sendStatusUpdate(data, "DONE")
-            print("OK")
 
     def processDelete(self, data):
         self.sendStatusUpdate(data, "PROC")
@@ -421,6 +428,7 @@ while True:
                     sync.processInsert(item)
                 elif(msgType == 'UPD'):
                     sync.processUpdate(item)
+                    sys.exit()
                 elif(msgType == 'DEL'):
                     sync.processDelete(item)
                 elif(msgType == 'ACK'):
