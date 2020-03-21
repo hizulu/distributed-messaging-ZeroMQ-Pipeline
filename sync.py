@@ -428,7 +428,6 @@ while True:
                     sync.processInsert(item)
                 elif(msgType == 'UPD'):
                     sync.processUpdate(item)
-                    sys.exit()
                 elif(msgType == 'DEL'):
                     sync.processDelete(item)
                 elif(msgType == 'ACK'):
