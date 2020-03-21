@@ -22,10 +22,10 @@ class Outbox:
         priority = data['priority'] if 'priority' in data else 2
         # client_uid = receiver id
         client_uid = data['client_unique_id']
-        unix_timestamp = data['occur_at'] if 'occur_at' in data else int(
-            time.time())
-        first_time_occur_at = data['first_time_occur_at'] if 'first_time_occur_at' in data else int(
-            time.time())
+        unix_timestamp = data['occur_at'] if 'occur_at' in data else time.time(
+        )
+        first_time_occur_at = data['first_time_occur_at'] if 'first_time_occur_at' in data else time.time(
+        )
 
         time_at = datetime.datetime.utcfromtimestamp(
             unix_timestamp)

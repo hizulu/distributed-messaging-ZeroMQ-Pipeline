@@ -8,10 +8,8 @@ rowLimit = '200'
 db = DatabaseConnection(env.DB_HOST, env.DB_UNAME,
                         env.DB_PASSWORD, env.DB_NAME)
 
-for i in range(10):
+for i in range(100):
     nama_buku = "H1-{}".format(i+1)
-    sql = """
-    INSERT INTO tb_buku(`nama_buku`, `jenisbuku_id`, isbn)
-    VALUES('{}', 1, 12341234)""".format(nama_buku)
+    sql = "insert into tb_coba(nama) values('rama')"
     db.executeCommit(sql=sql)
     print("{}".format(i+1))

@@ -18,10 +18,10 @@ class Inbox:
         priority = data['priority'] if 'priority' in data else 2
         # result_primary_key = data['result_primary_key'] if 'result_primary_key' in data else 0
         master_status = data['master_status']
-        unix_timestamp = data['occur_at'] if 'occur_at' in data else int(
-            time.time())
-        first_time_occur_at = data['first_time_occur_at'] if 'first_time_occur_at' in data else int(
-            time.time())
+        unix_timestamp = data['occur_at'] if 'occur_at' in data else time.time(
+        )
+        first_time_occur_at = data['first_time_occur_at'] if 'first_time_occur_at' in data else time.time(
+        )
         dttime = datetime.datetime.utcfromtimestamp(
             unix_timestamp).strftime('%Y-%m-%d %H:%M:%S')
         sql = """

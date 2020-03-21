@@ -24,15 +24,15 @@ if (isMaster != 'y' and isMaster != 'n'):
 isMaster = True if isMaster == 'y' else False
 
 
-# if (not isMaster):
-#     while True:
-#         mode = int(input("[?] Pilih Mode(1 atau 2 Arah)? tulis angka saja: "))
-#         if (mode > 2 or mode < 1):
-#             print("[!] Input tidak sesuai. Masukkan `1` atau `2`")
-#         else:
-#             print(f"[/] Menggunakan Mode {mode} Arah")
-#             break
-mode = 2
+if (not isMaster):
+    while True:
+        mode = int(input("[?] Pilih Mode(1 atau 2 Arah)? tulis angka saja: "))
+        if (mode > 2 or mode < 1):
+            print("[!] Input tidak sesuai. Masukkan `1` atau `2`")
+        else:
+            print(f"[/] Menggunakan Mode {mode} Arah")
+            break
+# mode = 2
 
 # db config
 while True:
@@ -125,7 +125,7 @@ else:
             break
 
     print("[/] Registrasi client ke Master")
-    regData = f"secret_key:{secretKey}#iv_key:{ivKey}#ip_address:{ipaddr}#port:5558"
+    regData = f"secret_key:{secretKey}#iv_key:{ivKey}#ip_address:{ipaddr}#port:5558#mode:{mode}"
     # mengirim menggunakan worker
     context = zmq.Context()
     sender = context.socket(zmq.PUSH)
@@ -187,8 +187,8 @@ else:
                         # memasukkan master ke tabel client
                         print("[/] Memasukkan master ke tabel client", end="...")
                         sql = f"""
-                            insert into tb_sync_client(client_unique_id, client_key, client_iv, client_ip, client_port)
-                            values(1, '{masterSecretKey}', '{masterIvKey}', '{masterip}', 5558)
+                            insert into tb_sync_client(client_unique_id, client_key, client_iv, client_ip, client_port, client_mode)
+                            values(1, '{masterSecretKey}', '{masterIvKey}', '{masterip}', 5558, {mode})
                         """
                         inserted = db.executeCommit(sql)
                         print("OK") if inserted else print("ERROR")

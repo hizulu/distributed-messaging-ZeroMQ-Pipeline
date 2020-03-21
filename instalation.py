@@ -84,7 +84,7 @@ class Instalation:
         SET qry := CONCAT("insert into {tablename}({fields}) values({values});
         SET tb := "{tablename}";
 
-        INSERT INTO `tb_sync_changelog`(`query`, `table`, `type`, row_id, occur_at, first_time_occur_at, sync_token) VALUES(qry, tb, 'INS', new.{pk}, UNIX_TIMESTAMP(), new.last_action_at, new.sync_token);
+        INSERT INTO `tb_sync_changelog`(`query`, `table`, `type`, row_id, occur_at, first_time_occur_at, sync_token) VALUES(qry, tb, 'INS', new.{pk}, UNIX_TIMESTAMP(now(3)), new.last_action_at, new.sync_token);
 
         """
 
@@ -117,7 +117,7 @@ class Instalation:
         #SET new.sync_id = sync_id_temp;
         IF new.sync_token IS NULL THEN
             SET new.sync_token = CAST(CONCAT('{self.uniqueId}', auto_id) AS UNSIGNED);
-            SET new.last_action_at = UNIX_TIMESTAMP();
+            SET new.last_action_at = UNIX_TIMESTAMP(now(3));
         END IF;
         """
 
@@ -138,14 +138,16 @@ class Instalation:
         declaration = """
         DECLARE qry TEXT;
 	    DECLARE tb VARCHAR(100);
+        DECLARE time_at DOUBLE DEFAULT 0;
         """
 
         body = f"""
         SET qry := old.{pk};
         SET tb := "{tablename}";
+        SET time_at := UNIX_TIMESTAMP(NOW(3))
 
         INSERT INTO `tb_sync_changelog`(`query`, `table`, `type`, row_id, occur_at, first_time_occur_at, sync_token)
-        VALUES(qry, tb, 'DEL', old.{pk}, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), old.sync_token);
+        VALUES(qry, tb, 'DEL', old.{pk}, time_at, time_at, old.sync_token);
         """
 
         footer = "END;"
@@ -190,7 +192,7 @@ class Instalation:
         SET tb := '{tablename}';
 
         IF update_count > 0 THEN
-            INSERT INTO `tb_sync_changelog`(`query`, `table`, `type`, row_id, occur_at, first_time_occur_at, sync_token) VALUES(update_query, tb, 'UPD', new.{pk}, UNIX_TIMESTAMP(), new.last_action_at, new.sync_token);
+            INSERT INTO `tb_sync_changelog`(`query`, `table`, `type`, row_id, occur_at, first_time_occur_at, sync_token) VALUES(update_query, tb, 'UPD', new.{pk}, UNIX_TIMESTAMP(NOW(3)), new.last_action_at, new.sync_token);
         END IF;
         """
 
@@ -217,7 +219,7 @@ class Instalation:
         FROM tb_sync_changelog;
 
         SET new.sync_token = CAST(CONCAT('{self.uniqueId}', auto_id) AS UNSIGNED);
-        SET new.last_action_at = UNIX_TIMESTAMP();
+        SET new.last_action_at = UNIX_TIMESTAMP(NOW(3));
         """
 
         footer = "END;"
@@ -276,7 +278,7 @@ class Instalation:
             DECLARE finished INTEGER DEFAULT 0;
             DECLARE id INTEGER(11);
             DECLARE curClient CURSOR FOR
-            SELECT client_unique_id FROM tb_sync_client;
+            SELECT client_unique_id FROM tb_sync_client where client_mode = 2;
            DECLARE CONTINUE HANDLER FOR NOT FOUND SET finished = 1;
         """
         body = """
@@ -348,8 +350,8 @@ class Instalation:
         `query` text,
         `type` varchar(5) DEFAULT NULL,
         `is_proceed` tinyint(4) DEFAULT '0',
-        `first_time_occur_at` int(11) DEFAULT NULL,
-        `occur_at` bigint(20) DEFAULT NULL,
+        `first_time_occur_at` double DEFAULT NULL,
+        `occur_at` double DEFAULT NULL,
         `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
         `sync_token` varchar(100) DEFAULT NULL,
         PRIMARY KEY (`log_id`)
@@ -366,6 +368,7 @@ class Instalation:
             `client_iv` varchar(25) DEFAULT NULL,
             `client_ip` varchar(20) DEFAULT NULL,
             `client_port` int(11) DEFAULT NULL,
+            `client_mode` tinyint(4) DEFAULT '2',
             PRIMARY KEY (`client_id`)
             )
         """
@@ -377,17 +380,17 @@ class Instalation:
         `inbox_id` bigint(20) NOT NULL AUTO_INCREMENT,
         `row_id` int(11) DEFAULT NULL,
         `table_name` varchar(255) DEFAULT NULL,
-        `msg_type` enum('INS','UPD','DEL','ACK','PRI','REG') DEFAULT NULL,
+        `msg_type` enum('INS','UPD','DEL','ACK','PRI','REG','PROC','NEEDPK','DONE') CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT NULL,
         `msg_id` int(11) DEFAULT NULL,
         `query` text,
         `client_unique_id` int(11) DEFAULT NULL,
         `master_status` tinyint(4) DEFAULT '0',
         `result_primary_key` int(11) DEFAULT '0' COMMENT 'primary key after process the query, due to differential PK between host',
-        `status` enum('waiting','processed','need_pk_update','done','error') DEFAULT 'waiting',
+        `status` enum('waiting','need_pk_update','done','error','processing') CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT 'waiting',
         `priority` tinyint(4) DEFAULT '2',
         `sync_token` varchar(100) DEFAULT NULL,
-        `first_time_occur_at` int(11) DEFAULT NULL,
-        `occur_at` bigint(20) DEFAULT NULL,
+        `first_time_occur_at` double DEFAULT NULL,
+        `occur_at` double DEFAULT NULL,
         `created_at` datetime DEFAULT NULL,
         `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (`inbox_id`)
@@ -401,19 +404,16 @@ class Instalation:
         `outbox_id` bigint(20) NOT NULL AUTO_INCREMENT,
         `row_id` int(11) DEFAULT NULL COMMENT 'primary key of table in local',
         `table_name` varchar(255) DEFAULT NULL,
-        `msg_type` enum('INS','UPD','DEL','ACK','PRI','REG') DEFAULT NULL,
+        `msg_type` enum('INS','UPD','DEL','ACK','PRI','REG','PROC','NEEDPK','DONE') CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT NULL,
         `msg_id` int(11) DEFAULT NULL COMMENT 'outbox_id from local',
         `query` text,
         `client_unique_id` int(11) DEFAULT NULL COMMENT 'client_unique_id',
-        `is_sent` tinyint(4) DEFAULT '0',
-        `is_arrived` tinyint(4) DEFAULT '0',
-        `is_error` tinyint(4) DEFAULT '0',
-        `status` enum('waiting','sent','arrived','canceled','retry') DEFAULT 'waiting',
+        `status` enum('waiting','sent','arrived','canceled','retry','need_pk_update','done','processing') CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT 'waiting',
         `priority` tinyint(4) DEFAULT '2',
         `sync_token` varchar(100) DEFAULT NULL,
         `retry_again_at` datetime DEFAULT NULL,
-        `first_time_occur_at` int(11) DEFAULT NULL,
-        `occur_at` bigint(20) DEFAULT NULL,
+        `first_time_occur_at` double DEFAULT NULL,
+        `occur_at` double DEFAULT NULL,
         `created_at` datetime DEFAULT NULL,
         `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
         `client_ip` varchar(100) DEFAULT NULL,
@@ -448,7 +448,7 @@ class Instalation:
             lastColumn = columns['data'][len(columns['data']) - 1]
 
             alterTableQuery = """
-                alter table {} add last_action_at integer after {}
+                alter table {} add last_action_at double after {}
             """.format(tb['TABLE_NAME'], lastColumn['COLUMN_NAME'])
             if(self.db.executeCommit(alterTableQuery)):
                 print("OK")

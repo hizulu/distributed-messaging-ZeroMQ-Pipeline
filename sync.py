@@ -194,6 +194,10 @@ class Sync:
 
     def processUpdate(self, data):
         self.sendStatusUpdate(data, "PROC")
+
+        # cek apakah pesan ini lebih baru dibantingkan data sekarnag
+        data = self.syncDB.executeFetchOne(f"select * from {data['table_name']} where {self._getPrimaryKeyColumn(data['table_name'])}={data['row_id']}")
+        print(data)
         execute = self.syncDB.executeCommit(data['query'])
         if (not execute):
             print("ERROR")
@@ -338,7 +342,7 @@ class Sync:
 
     def getData(self):
         self.syncDB.connect()
-        sql = "select * from tb_sync_inbox where status = 'waiting' order by priority asc, inbox_id asc"
+        sql = "select * from tb_sync_inbox where status = 'waiting' order by priority asc, inbox_id asc, occur_at asc"
         if (self.limitRow > 0):
             sql += f' {self.limitRow}'
         data = self.syncDB.executeFetchAll(sql, False)
@@ -373,6 +377,27 @@ class Sync:
             self.setAsProcessed(inbox_id)
         else:
             self.setPriority(inbox_id, 'tb_sync_inbox', 3)
+
+    def canProcessMsg(self, data):
+        watchedMsgType = ['INS', 'UPD', 'DEL']
+        if (data['msg_type'] not in watchedMsgType):
+            return True
+
+        # cek apakah ada pesan watchedMsgType yang blm selesai
+        # sebelum inbox_id ini
+
+        # jika slave, harus memastika semua outbox nya selesai di proses di master
+        # lalu eksekusi inbox
+        if (not env.MASTER_MODE):
+            previousMsgs = self.syncDB.executeFetchOne(
+                "select count(*) as total from tb_sync_outbox where (msg_type = 'INS' or msg_type='UPD' or msg_type='DEL') and status <> 'done'")
+
+            if (previousMsgs['data']['total'] > 0):
+                return False
+            else:
+                return True
+
+        print(previousMsgs)
 
 
 sync = Sync()
