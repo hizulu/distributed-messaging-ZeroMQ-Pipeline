@@ -60,15 +60,15 @@ class Sync:
     def processInsert(self, data):
         print('Processing inbox: {}'.format(data['inbox_id']), end=": ")
         # mengirim bahwa pesan sedang di proses
-        self.sendStatusUpdate(data, 'PROC')
+        # self.sendStatusUpdate(data, 'PROC')
 
         insert = self.syncDB.executeCommit(data['query'])
         rowId = self.syncDB.lastRowId
 
         if (insert):
             # hanya master yang mengirim NEEDPK ke slave
-            if(env.MASTER_MODE):
-                self.sendStatusUpdate(data, 'NEEDPK')
+            # if(env.MASTER_MODE):
+            #     self.sendStatusUpdate(data, 'NEEDPK')
 
             print('done')
 
