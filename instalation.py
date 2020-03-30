@@ -61,8 +61,8 @@ class Instalation:
         # creating value string
         values = ""
         prefix = "\",\"\'\","
-        firstColDivider = ",\"\',\","
-        secondColDivider = ",\",\'\","
+        firstColDivider = ",\"\',\'\","
+        secondColDivider = ",\"\',\'\","
         middle = ",\"\',\'\","
         sufix = ",\"\')\""
         values += prefix

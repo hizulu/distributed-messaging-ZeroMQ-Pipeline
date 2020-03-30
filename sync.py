@@ -143,7 +143,7 @@ class Sync:
                     # pesan PRI di generate oleh slave
                     # mengambil pesan INS
                     insMsg = self.syncDB.executeFetchOne(
-                        f"select * from tb_sync_inbox where row_id={data['row_id']} and msg_type='INS' and table_name='{data['table_name']}'")
+                        f"select * from tb_sync_inbox where row_id={data['query']} and msg_type='INS' and table_name='{data['table_name']}'")
                     self.sendStatusUpdate(insMsg['data'], 'DONE')
                 else:
                     # pesan PRI yang diterima dari master
