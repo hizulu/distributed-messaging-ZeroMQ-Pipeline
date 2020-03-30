@@ -193,7 +193,7 @@ class Sync:
                     "Sync.processPrimaryKey", json.dumps(self.syncDB.getLastCommitError()))
 
     def processUpdate(self, data):
-        self.sendStatusUpdate(data, "PROC")
+        # self.sendStatusUpdate(data, "PROC")
 
         # cek apakah pesan ini lebih baru dibantingkan data sekarnag
         primary_key = self._getPrimaryKeyColumn(data['table_name'])
@@ -214,7 +214,7 @@ class Sync:
             self.sendStatusUpdate(data, "DONE")
 
     def processDelete(self, data):
-        self.sendStatusUpdate(data, "PROC")
+        # self.sendStatusUpdate(data, "PROC")
         # cek apakah ada inbox yang bertipe PRI
         # berdasarkan primari key yang masuk
         # jika ada mata update inbox tersebut jadi terproses

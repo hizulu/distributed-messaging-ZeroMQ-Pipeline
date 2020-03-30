@@ -92,6 +92,8 @@ else:
         print(f'[/] Menghapus data tabel `{table}`', end="...")
         sql = f"DELETE FROM {table}"
         deleted = db.executeCommit(sql)
+        resetAutoIncrement = db.executeCommit(
+            f"ALTER TABLE {table} AUTO_INCREMENT = 1;")
         if(not deleted):
             print(db.getLastCommitError())
         print('OK') if deleted else print("ERROR")

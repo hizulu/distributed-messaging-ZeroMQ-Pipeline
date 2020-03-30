@@ -117,7 +117,7 @@ class Instalation:
         #SET new.sync_id = sync_id_temp;
         IF new.sync_token IS NULL THEN
             SET new.sync_token = CAST(CONCAT('{self.uniqueId}', auto_id) AS UNSIGNED);
-            SET new.last_action_at = UNIX_TIMESTAMP(now(3));
+            SET new.last_action_at = UNIX_TIMESTAMP(now(6));
         END IF;
         """
 
@@ -220,8 +220,10 @@ class Instalation:
         SELECT IFNULL(MAX(log_id), 0)+1 INTO auto_id
         FROM tb_sync_changelog;
 
-        SET new.sync_token = CAST(CONCAT('{self.uniqueId}', auto_id) AS UNSIGNED);
-        SET new.last_action_at = UNIX_TIMESTAMP(NOW(3));
+        IF new.sync_token = old.sync_token THEN
+            SET new.sync_token = CAST(CONCAT('{self.uniqueId}', auto_id) AS UNSIGNED);
+            SET new.last_action_at = UNIX_TIMESTAMP(NOW(6));
+        END IF;
         """
 
         footer = "END;"
