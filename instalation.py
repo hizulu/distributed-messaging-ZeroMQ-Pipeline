@@ -205,7 +205,7 @@ class Instalation:
             print(self.db.getLastCommitError())
         return created
 
-    def _createBeforeUpdateTrigger(self, tablename):
+    def _createBeforeUpdateTrigger(self, tablename, pk):
         triggername = f"before_update_{tablename}"
         print(f"Creating `{triggername}`", end="...")
         header = f"""CREATE TRIGGER `{triggername}` BEFORE UPDATE ON `{tablename}`
@@ -214,14 +214,22 @@ class Instalation:
 
         declaration = """
         DECLARE auto_id BIGINT DEFAULT 0;
+        DECLARE pri_change TINYINT DEFAULT 0;
         """
 
         body = f"""
         SELECT IFNULL(MAX(log_id), 0)+1 INTO auto_id
         FROM tb_sync_changelog;
-
-        IF new.sync_token <> old.sync_token THEN
-            SET new.sync_token = CAST(CONCAT('{self.uniqueId}', auto_id) AS UNSIGNED);
+        
+        IF old.{pk} != new.{pk} THEN
+            SET pri_change := 1;
+        END IF;
+        
+        IF pri_change = 1 OR (pri_change = 0 AND new.sync_token != old.sync_token) THEN
+            SET new.sync_token = new.sync_token;
+            SET new.last_action_at = new.last_action_at;
+        ELSE
+            SET new.sync_token = CAST(CONCAT('1', auto_id) AS UNSIGNED);
             SET new.last_action_at = UNIX_TIMESTAMP(NOW(6));
         END IF;
         """
@@ -251,7 +259,7 @@ class Instalation:
                 print('OK') if self._createAfterUpdateTrigger(
                     tb['TABLE_NAME'], columns['data']) else print("ERROR")
                 print('OK') if self._createBeforeUpdateTrigger(
-                    tb['TABLE_NAME']) else print("ERROR")
+                    tb['TABLE_NAME'], columns['data'][0]['COLUMN_NAME']) else print("ERROR")
 
     def dropAllTrigger(self):
         print('--------------')
