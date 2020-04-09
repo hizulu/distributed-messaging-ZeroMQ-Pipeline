@@ -199,6 +199,8 @@ class Sync:
         primary_key = self._getPrimaryKeyColumn(data['table_name'])
         row_data = self.syncDB.executeFetchOne(
             f"select * from {data['table_name']} where {primary_key}={data['row_id']}")
+        print(
+            f"{row_data['data']['last_action_at']} : {data['first_time_occur_at']}")
         if (row_data['data']['last_action_at'] < data['first_time_occur_at']):
             # data yang di proses adalah data baru
             execute = self.syncDB.executeCommit(data['query'])
@@ -448,6 +450,8 @@ while True:
                 else:
                     sync.syncDB.insError("Msg type not found for id=" +
                                          str(item['inbox_id']))
+
+                print(f"finish at: {time.time()}")
         else:
             time.sleep(1)
     else:

@@ -136,6 +136,7 @@ class Ventilator:
                 self.outbox.update(data={'priority': 3, 'status': status, 'retry_again_at': nextRetryAt}, where_clause={
                                    'outbox_id': item['outbox_id']})
                 self.sender.send_json(packet)
+                print(f"send at: {time.time()}")
             else:
                 print('invalid, Reason: {}'.format(invalidReason))
                 self.outbox.update(data={'status': 'canceled'}, where_clause={

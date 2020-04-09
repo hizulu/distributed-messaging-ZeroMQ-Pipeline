@@ -229,7 +229,7 @@ class Instalation:
             SET new.sync_token = new.sync_token;
             SET new.last_action_at = new.last_action_at;
         ELSE
-            SET new.sync_token = CAST(CONCAT('1', auto_id) AS UNSIGNED);
+            SET new.sync_token = CAST(CONCAT('{self.uniqueId}', auto_id) AS UNSIGNED);
             SET new.last_action_at = UNIX_TIMESTAMP(NOW(6));
         END IF;
         """
