@@ -167,6 +167,7 @@ class Instalation:
         DECLARE tb VARCHAR(100);
         DECLARE front_update TINYINT DEFAULT 0;
         DECLARE update_count TINYINT DEFAULT 0;
+        DECLARE latest_update_id BIGINT DEFAULT 0;
         """
 
         col = [col['COLUMN_NAME']
@@ -174,7 +175,15 @@ class Instalation:
         pk = columns[0]['COLUMN_NAME']
 
         body = f"""
-        SET update_query := "update {tablename} set ";"""
+        SELECT inbox_id INTO latest_update_id FROM tb_sync_inbox 
+        WHERE msg_type = 'UPD' AND table_name = '{tablename}' AND row_id = new.{pk} 
+        AND first_time_occur_at > new.last_action_at ORDER BY first_time_occur_at DESC LIMIT 1;
+
+        IF(latest_update_id != 0) THEN
+            UPDATE tb_sync_inbox SET STATUS = 'waiting' WHERE inbox_id = latest_update_id;
+        ELSE
+        
+            SET update_query := "update {tablename} set ";"""
 
         for c in col:
             body += f"""
@@ -195,6 +204,8 @@ class Instalation:
             SET update_query := CONCAT(update_query, ",last_action_at='", new.last_action_at, "',", "sync_token='", new.sync_token, "'");	
             SET update_query := CONCAT(update_query, " where {pk}=", new.{pk});
             INSERT INTO `tb_sync_changelog`(`query`, `table`, `type`, row_id, occur_at, first_time_occur_at, sync_token) VALUES(update_query, tb, 'UPD', new.{pk}, UNIX_TIMESTAMP(NOW(3)), new.last_action_at, new.sync_token);
+        END IF;
+        
         END IF;
         """
 
