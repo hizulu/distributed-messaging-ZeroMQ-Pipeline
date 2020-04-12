@@ -413,7 +413,7 @@ sync = Sync()
 # sync.setPriority(2677, 'tb_sync_outbox', 2)
 # sync.db.insError("test")
 # sys.exit()
-file = open("proctime.text", 'a')
+
 while True:
     inbox = sync.getData()
     if(inbox['execute_status']):
@@ -453,11 +453,13 @@ while True:
                                          str(item['inbox_id']))
 
                 # print(f"finish at: {time.time()}")
+                file = open("proctime.text", 'a')
                 file.write(f'{time.time()}')
+                file.close()
+
         else:
             time.sleep(1)
     else:
         print('Error')
         sys.exit()
     # sys.exit()
-file.close()

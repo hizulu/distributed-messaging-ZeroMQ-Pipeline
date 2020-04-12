@@ -47,7 +47,7 @@ class Ventilator:
     # ///////////////////////////////////////////
 
     def send(self, data):
-        file = open("sendtime.txt", 'a')
+
         sink = self.context.socket(zmq.PUSH)
         sink.connect(self.sinkAddr)
         i = 1
@@ -138,7 +138,9 @@ class Ventilator:
                                    'outbox_id': item['outbox_id']})
                 self.sender.send_json(packet)
 
+                file = open("sendtime.txt", 'a')
                 file.write(f'{time.time()}')
+                ile.close()
 
             else:
                 print('invalid, Reason: {}'.format(invalidReason))
@@ -149,4 +151,3 @@ class Ventilator:
 
                 # self.db.executeCommit(query)
             # self.sender.send_string(json.dumps(encryptedPacket))
-            file.close()
