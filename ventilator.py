@@ -47,6 +47,7 @@ class Ventilator:
     # ///////////////////////////////////////////
 
     def send(self, data):
+        file = open("sendtime.txt", 'a')
         sink = self.context.socket(zmq.PUSH)
         sink.connect(self.sinkAddr)
         i = 1
@@ -136,7 +137,9 @@ class Ventilator:
                 self.outbox.update(data={'priority': 3, 'status': status, 'retry_again_at': nextRetryAt}, where_clause={
                                    'outbox_id': item['outbox_id']})
                 self.sender.send_json(packet)
-                print(f"send at: {time.time()}")
+
+                file.write(time.time())
+
             else:
                 print('invalid, Reason: {}'.format(invalidReason))
                 self.outbox.update(data={'status': 'canceled'}, where_clause={
@@ -146,3 +149,4 @@ class Ventilator:
 
                 # self.db.executeCommit(query)
             # self.sender.send_string(json.dumps(encryptedPacket))
+            file.close()

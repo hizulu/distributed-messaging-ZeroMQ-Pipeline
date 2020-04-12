@@ -413,6 +413,7 @@ sync = Sync()
 # sync.setPriority(2677, 'tb_sync_outbox', 2)
 # sync.db.insError("test")
 # sys.exit()
+file = open("proctime.text", 'a')
 while True:
     inbox = sync.getData()
     if(inbox['execute_status']):
@@ -451,10 +452,12 @@ while True:
                     sync.syncDB.insError("Msg type not found for id=" +
                                          str(item['inbox_id']))
 
-                print(f"finish at: {time.time()}")
+                # print(f"finish at: {time.time()}")
+                file.write(time.time())
         else:
             time.sleep(1)
     else:
         print('Error')
         sys.exit()
     # sys.exit()
+file.close()
