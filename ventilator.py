@@ -138,7 +138,7 @@ class Ventilator:
                                    'outbox_id': item['outbox_id']})
                 self.sender.send_json(packet)
 
-                file.write(time.time())
+                file.write(f'{time.time()}')
 
             else:
                 print('invalid, Reason: {}'.format(invalidReason))

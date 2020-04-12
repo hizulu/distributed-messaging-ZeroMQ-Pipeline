@@ -453,7 +453,7 @@ while True:
                                          str(item['inbox_id']))
 
                 # print(f"finish at: {time.time()}")
-                file.write(time.time())
+                file.write(f'{time.time()}')
         else:
             time.sleep(1)
     else:
