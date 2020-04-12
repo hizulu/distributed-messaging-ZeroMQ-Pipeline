@@ -454,7 +454,7 @@ while True:
 
                 # print(f"finish at: {time.time()}")
                 file = open("proctime.text", 'a')
-                file.write(f'{time.time()}')
+                file.write(f"{time.time()}\n")
                 file.close()
 
         else:

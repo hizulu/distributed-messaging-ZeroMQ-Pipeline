@@ -139,8 +139,8 @@ class Ventilator:
                 self.sender.send_json(packet)
 
                 file = open("sendtime.txt", 'a')
-                file.write(f'{time.time()}')
-                ile.close()
+                file.write(f"{time.time()}\n")
+                file.close()
 
             else:
                 print('invalid, Reason: {}'.format(invalidReason))
