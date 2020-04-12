@@ -7,6 +7,7 @@ from inbox import Inbox
 import json
 import time
 import datetime
+import threading
 
 
 class Sync:
@@ -358,6 +359,20 @@ class Sync:
         self.syncDB.close()
         return data
 
+    def getStatusInbox(self):
+        sql = "select * from tb_sync_inbox where status = 'waiting' and (msg_type = 'ACK' or msg_type = 'DONE' or msg_type = 'PRI') order by priority asc, inbox_id asc, occur_at asc"
+        if (self.limitRow > 0):
+            sql += f' {self.limitRow}'
+        data = self.syncDB.executeFetchAll(sql)
+        return data
+
+    def getSyncInbox(self):
+        sql = "select * from tb_sync_inbox where status = 'waiting' and (msg_type = 'INS' or msg_type = 'UPD' or msg_type = 'DEL' or msg_type = 'REG') order by priority asc, inbox_id asc, occur_at asc"
+        if (self.limitRow > 0):
+            sql += f' {self.limitRow}'
+        data = self.syncDB.executeFetchAll(sql)
+        return data
+
     def setAsProcessed(self, id, status='done'):
         set = self.inbox.update(
             data={'status': status}, where_clause={'inbox_id': id})
@@ -408,17 +423,9 @@ class Sync:
 
         print(previousMsgs)
 
-
-sync = Sync()
-# sync.setPriority(2677, 'tb_sync_outbox', 2)
-# sync.db.insError("test")
-# sys.exit()
-
-while True:
-    inbox = sync.getData()
-    if(inbox['execute_status']):
-        if(inbox['data']):
-            for item in inbox['data']:
+    def process(self, inbox):
+        if(inbox):
+            for item in inbox:
                 # proses pesan selain INS, UPD dan DEL terlebih dahulu
                 # jgn proses pesan utama jika masih ada pesan INS UPD DEL yang belum selesai
 
@@ -428,28 +435,28 @@ while True:
                     "[{}] -> #{}".format(datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S"), item['msg_id']), end=" ")
                 msgType = item['msg_type']
                 if(msgType == 'INS'):
-                    sync.processInsert(item)
+                    self.processInsert(item)
                 elif(msgType == 'UPD'):
-                    sync.processUpdate(item)
+                    self.processUpdate(item)
                 elif(msgType == 'DEL'):
-                    sync.processDelete(item)
+                    self.processDelete(item)
                 elif(msgType == 'ACK'):
-                    sync.processAck(item)
+                    self.processAck(item)
                 elif(msgType == "PRI"):
-                    sync.processPrimaryKey(item)
+                    self.processPrimaryKey(item)
                 elif (msgType == 'REG'):
-                    sync.processReg(item)
+                    self.processReg(item)
                 elif (msgType == 'PROC'):
-                    print(sync.updateOutboxStatus(
+                    print(self.updateOutboxStatus(
                         item['query'], "processing", item['inbox_id']))
                 elif (msgType == 'NEEDPK'):
-                    print(sync.updateOutboxStatus(
+                    print(self.updateOutboxStatus(
                         item['query'], "need_pk_update", item['inbox_id']))
                 elif (msgType == 'DONE'):
-                    print(sync.updateOutboxStatus(
+                    print(self.updateOutboxStatus(
                         item['query'], "done", item['inbox_id']))
                 else:
-                    sync.syncDB.insError("Msg type not found for id=" +
+                    self.syncDB.insError("Msg type not found for id=" +
                                          str(item['inbox_id']))
 
                 # print(f"finish at: {time.time()}")
@@ -458,8 +465,72 @@ while True:
                 file.close()
 
         else:
-            time.sleep(1)
-    else:
-        print('Error')
-        sys.exit()
+            time.sleep(0.3)
+
+
+sync = Sync()
+# sync.setPriority(2677, 'tb_sync_outbox', 2)
+# sync.db.insError("test")
+# sys.exit()
+
+while True:
+    syncInbox = sync.getSyncInbox()
+    statusInbox = sync.getStatusInbox()
+
+    syncThread = threading.Thread(
+        target=sync.process, args=(syncInbox['data'],))
+    statusThread = threading.Thread(
+        target=sync.process, args=(statusInbox['data'],))
+
+    syncThread.start()
+    statusThread.start()
+
+    syncThread.join()
+    statusThread.join()
+    # if(inbox['execute_status']):
+    #     if(inbox['data']):
+    #         for item in inbox['data']:
+    #             # proses pesan selain INS, UPD dan DEL terlebih dahulu
+    #             # jgn proses pesan utama jika masih ada pesan INS UPD DEL yang belum selesai
+
+    #             # jika proses adalah INS UPD DEL, lakukan pengecekan pesan tertunda
+    #             delayMsgInboxQ = "select count(*) from tb_sync_inbox where status "
+    #             print(
+    #                 "[{}] -> #{}".format(datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S"), item['msg_id']), end=" ")
+    #             msgType = item['msg_type']
+    #             if(msgType == 'INS'):
+    #                 sync.processInsert(item)
+    #             elif(msgType == 'UPD'):
+    #                 sync.processUpdate(item)
+    #             elif(msgType == 'DEL'):
+    #                 sync.processDelete(item)
+    #             elif(msgType == 'ACK'):
+    #                 sync.processAck(item)
+    #             elif(msgType == "PRI"):
+    #                 sync.processPrimaryKey(item)
+    #             elif (msgType == 'REG'):
+    #                 sync.processReg(item)
+    #             elif (msgType == 'PROC'):
+    #                 print(sync.updateOutboxStatus(
+    #                     item['query'], "processing", item['inbox_id']))
+    #             elif (msgType == 'NEEDPK'):
+    #                 print(sync.updateOutboxStatus(
+    #                     item['query'], "need_pk_update", item['inbox_id']))
+    #             elif (msgType == 'DONE'):
+    #                 print(sync.updateOutboxStatus(
+    #                     item['query'], "done", item['inbox_id']))
+    #             else:
+    #                 sync.syncDB.insError("Msg type not found for id=" +
+    #                                      str(item['inbox_id']))
+
+    #             # print(f"finish at: {time.time()}")
+    #             file = open("proctime.text", 'a')
+    #             file.write(f"{time.time()}\n")
+    #             file.close()
+
+    #     else:
+    #         time.sleep(1)
+    # else:
+    #     print('Error')
+    #     sys.exit()
     # sys.exit()
