@@ -360,14 +360,14 @@ class Sync:
         return data
 
     def getStatusInbox(self):
-        sql = "select * from tb_sync_inbox where status = 'waiting' and (msg_type = 'ACK' or msg_type = 'DONE' or msg_type = 'PRI') order by priority asc, inbox_id asc, occur_at asc"
+        sql = "select * from tb_sync_inbox where status = 'waiting' and (msg_type = 'ACK' or msg_type = 'DONE') order by priority asc, inbox_id asc, occur_at asc"
         if (self.limitRow > 0):
             sql += f' {self.limitRow}'
         data = self.syncDB.executeFetchAll(sql)
         return data
 
     def getSyncInbox(self):
-        sql = "select * from tb_sync_inbox where status = 'waiting' and (msg_type = 'INS' or msg_type = 'UPD' or msg_type = 'DEL' or msg_type = 'REG') order by priority asc, inbox_id asc, occur_at asc"
+        sql = "select * from tb_sync_inbox where status = 'waiting' and (msg_type = 'INS' or msg_type = 'UPD' or msg_type = 'DEL' or msg_type = 'REG' or msg_type = 'PRI') order by priority asc, inbox_id asc, occur_at asc"
         if (self.limitRow > 0):
             sql += f' {self.limitRow}'
         data = self.syncDB.executeFetchAll(sql)
@@ -480,7 +480,7 @@ while True:
     syncThread = threading.Thread(
         target=sync.process, args=(syncInbox['data'],))
     statusThread = threading.Thread(
-        target=sync.process, args=(statusInbox['data'],))
+        target=sync.process, args=(syncThread['data'],))
 
     syncThread.start()
     statusThread.start()
