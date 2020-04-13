@@ -285,7 +285,7 @@ class Sync:
             #     data['inbox_id'], self.statusDB.getLastCommitError()['msg']))
         else:
             self.statusDB.executeCommit(
-                f"update tb_sync_inbox set status='done' where outbox_id={data['inbox_id']}")
+                f"update tb_sync_inbox set status='done' where inbox_id={data['inbox_id']}")
             # self.setAsProcessed(data['inbox_id'])
         return True
 
@@ -465,7 +465,7 @@ class Sync:
 
                     if (done):
                         print(self.statusDB.executeCommit(
-                            f"update tb_sync_inbox set status='done' where outbox_id={item['inbox_id']}"))
+                            f"update tb_sync_inbox set status='done' where inbox_id={item['inbox_id']}"))
                     else:
                         print("False")
                     # print(self.updateOutboxStatus(
