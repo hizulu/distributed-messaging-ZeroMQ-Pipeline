@@ -480,7 +480,7 @@ while True:
     syncThread = threading.Thread(
         target=sync.process, args=(syncInbox['data'],))
     statusThread = threading.Thread(
-        target=sync.process, args=(syncThread['data'],))
+        target=sync.process, args=(statusThread['data'],))
 
     syncThread.start()
     statusThread.start()
