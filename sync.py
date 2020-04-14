@@ -8,6 +8,7 @@ import json
 import time
 import datetime
 import threading
+from multiprocessing import Process
 
 
 class Sync:
@@ -492,9 +493,9 @@ while True:
     syncInbox = sync.getSyncInbox()
     statusInbox = sync.getStatusInbox()
 
-    syncThread = threading.Thread(
+    syncThread = Process(
         target=sync.process, args=(syncInbox['data'],))
-    statusThread = threading.Thread(
+    statusThread = Process(
         target=sync.process, args=(statusInbox['data'],))
 
     syncThread.start()
