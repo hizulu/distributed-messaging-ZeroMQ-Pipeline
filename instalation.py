@@ -236,7 +236,7 @@ class Instalation:
             SET pri_change := 1;
         END IF;
         
-        IF pri_change = 1 OR (pri_change = 0 AND new.sync_token != old.sync_token) THEN
+        IF pri_change = 1 OR (pri_change = 0 AND  not (new.sync_token <=> old.sync_token)) THEN
             SET new.sync_token = new.sync_token;
             SET new.last_action_at = new.last_action_at;
         ELSE
