@@ -528,8 +528,8 @@ while True:
                 file.close()
 
         else:
-            time.sleep(1)
+            time.sleep(0.2)
     else:
         print('Error')
-        sys.exit()
-    sys.exit()
+        # sys.exit()
+    # sys.exit()

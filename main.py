@@ -18,7 +18,7 @@ while True:
             ven.send(task['data'])
             # sys.exit()
         else:
-            time.sleep(0.3)
+            time.sleep(0.2)
     else:
         print('Error retrieving data')
     # sys.exit()
