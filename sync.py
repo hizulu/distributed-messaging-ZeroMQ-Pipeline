@@ -8,7 +8,6 @@ import json
 import time
 import datetime
 import threading
-from multiprocessing import Process
 
 
 class Sync:
@@ -16,8 +15,8 @@ class Sync:
     def __init__(self):
         self.syncDB = DatabaseConnection(
             env.DB_HOST, env.DB_UNAME, env.DB_PASSWORD, env.DB_NAME)
-        self.statusDB = DatabaseConnection(
-            env.DB_HOST, env.DB_UNAME, env.DB_PASSWORD, env.DB_NAME)
+        # self.statusDB = DatabaseConnection(
+        #     env.DB_HOST, env.DB_UNAME, env.DB_PASSWORD, env.DB_NAME)
         self.limitRow = env.LIMIT_PROC_ROW
         self.outbox = Outbox(self.syncDB)
         self.systemlog = SystemLog()
@@ -254,7 +253,7 @@ class Sync:
 
     def processAck(self, data):
 
-        obox = self.statusDB.executeFetchOne(
+        obox = self.syncDB.executeFetchOne(
             f"select * from tb_sync_outbox where outbox_id = {data['query']}")
         ack = True
         if(obox['data']):
@@ -268,16 +267,14 @@ class Sync:
             # }, where_clause={
             #     'outbox_id': data['query']
             # })
-            ack = self.statusDB.executeCommit(
+            ack = self.syncDB.executeCommit(
                 f"update tb_sync_outbox set status='{status}' where outbox_id={data['query']}")
         # ackQuery = "update tb_sync_outbox set is_arrived=1, status='arrived' where outbox_id = {}".format(
         #     data['query'])
         # ack = self.syncDB.executeCommit(ackQuery)
         if(not ack):
-            # self.outbox.update(data={'status': 'error'}, where_clause={
-            #                    'outbox_id': data['msg_id']})
-            self.statusDB.executeCommit(
-                f"update tb_sync_outbox set status='error' where outbox_id={data['msg_id']}")
+            self.outbox.update(data={'status': 'error'}, where_clause={
+                               'outbox_id': data['msg_id']})
             # errorQuery = 'update tb_sync_outbox set is_error=1 where outbox_id = {}'.format(
             #     data['msg_id'])
             # self.syncDB.executeCommit(errorQuery)
@@ -285,9 +282,7 @@ class Sync:
             # self.systemlog.insert("processACK", "Gagal update ACK ID#{} ERROR: {}".format(
             #     data['inbox_id'], self.statusDB.getLastCommitError()['msg']))
         else:
-            self.statusDB.executeCommit(
-                f"update tb_sync_inbox set status='done' where inbox_id={data['inbox_id']}")
-            # self.setAsProcessed(data['inbox_id'])
+            self.setAsProcessed(data['inbox_id'])
         return True
 
     def processReg(self, data):
@@ -490,63 +485,51 @@ sync = Sync()
 # sys.exit()
 
 while True:
-    syncInbox = sync.getSyncInbox()
-    statusInbox = sync.getStatusInbox()
+    inbox = sync.getData()
+    if(inbox['execute_status']):
+        if(inbox['data']):
+            for item in inbox['data']:
+                # proses pesan selain INS, UPD dan DEL terlebih dahulu
+                # jgn proses pesan utama jika masih ada pesan INS UPD DEL yang belum selesai
 
-    syncThread = Process(
-        target=sync.process, args=(syncInbox['data'],))
-    statusThread = Process(
-        target=sync.process, args=(statusInbox['data'],))
+                # jika proses adalah INS UPD DEL, lakukan pengecekan pesan tertunda
+                delayMsgInboxQ = "select count(*) from tb_sync_inbox where status "
+                print(
+                    "[{}] -> #{}".format(datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S"), item['msg_id']), end=" ")
+                msgType = item['msg_type']
+                if(msgType == 'INS'):
+                    sync.processInsert(item)
+                elif(msgType == 'UPD'):
+                    sync.processUpdate(item)
+                elif(msgType == 'DEL'):
+                    sync.processDelete(item)
+                elif(msgType == 'ACK'):
+                    sync.processAck(item)
+                elif(msgType == "PRI"):
+                    sync.processPrimaryKey(item)
+                elif (msgType == 'REG'):
+                    sync.processReg(item)
+                elif (msgType == 'PROC'):
+                    print(sync.updateOutboxStatus(
+                        item['query'], "processing", item['inbox_id']))
+                elif (msgType == 'NEEDPK'):
+                    print(sync.updateOutboxStatus(
+                        item['query'], "need_pk_update", item['inbox_id']))
+                elif (msgType == 'DONE'):
+                    print(sync.updateOutboxStatus(
+                        item['query'], "done", item['inbox_id']))
+                else:
+                    sync.syncDB.insError("Msg type not found for id=" +
+                                         str(item['inbox_id']))
 
-    syncThread.start()
-    statusThread.start()
+                # print(f"finish at: {time.time()}")
+                file = open("proctime.text", 'a')
+                file.write(f"{time.time()}\n")
+                file.close()
 
-    syncThread.join()
-    statusThread.join()
-    # if(inbox['execute_status']):
-    #     if(inbox['data']):
-    #         for item in inbox['data']:
-    #             # proses pesan selain INS, UPD dan DEL terlebih dahulu
-    #             # jgn proses pesan utama jika masih ada pesan INS UPD DEL yang belum selesai
-
-    #             # jika proses adalah INS UPD DEL, lakukan pengecekan pesan tertunda
-    #             delayMsgInboxQ = "select count(*) from tb_sync_inbox where status "
-    #             print(
-    #                 "[{}] -> #{}".format(datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S"), item['msg_id']), end=" ")
-    #             msgType = item['msg_type']
-    #             if(msgType == 'INS'):
-    #                 sync.processInsert(item)
-    #             elif(msgType == 'UPD'):
-    #                 sync.processUpdate(item)
-    #             elif(msgType == 'DEL'):
-    #                 sync.processDelete(item)
-    #             elif(msgType == 'ACK'):
-    #                 sync.processAck(item)
-    #             elif(msgType == "PRI"):
-    #                 sync.processPrimaryKey(item)
-    #             elif (msgType == 'REG'):
-    #                 sync.processReg(item)
-    #             elif (msgType == 'PROC'):
-    #                 print(sync.updateOutboxStatus(
-    #                     item['query'], "processing", item['inbox_id']))
-    #             elif (msgType == 'NEEDPK'):
-    #                 print(sync.updateOutboxStatus(
-    #                     item['query'], "need_pk_update", item['inbox_id']))
-    #             elif (msgType == 'DONE'):
-    #                 print(sync.updateOutboxStatus(
-    #                     item['query'], "done", item['inbox_id']))
-    #             else:
-    #                 sync.syncDB.insError("Msg type not found for id=" +
-    #                                      str(item['inbox_id']))
-
-    #             # print(f"finish at: {time.time()}")
-    #             file = open("proctime.text", 'a')
-    #             file.write(f"{time.time()}\n")
-    #             file.close()
-
-    #     else:
-    #         time.sleep(1)
-    # else:
-    #     print('Error')
-    #     sys.exit()
-    # sys.exit()
+        else:
+            time.sleep(1)
+    else:
+        print('Error')
+        sys.exit()
+    sys.exit()
