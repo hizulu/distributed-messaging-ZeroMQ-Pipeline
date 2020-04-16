@@ -18,8 +18,7 @@ class Log:
     # ///////////////////////////////////////////
 
     def getUnproceessLog(self):
-        query = f"""1796e
-            select * from tb_sync_outbox
+        query = f"""select * from tb_sync_outbox
             where (status = 'waiting') or
             (status = 'sent' and retry_again_at <= now()) 
             order by first_time_occur_at asc, priority asc"""
