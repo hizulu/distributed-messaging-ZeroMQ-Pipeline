@@ -258,13 +258,13 @@ class Sync:
             else:
                 status = 'arrived'
 
-            # ack = self.outbox.update(data={
-            #     'status': status
-            # }, where_clause={
-            #     'outbox_id': data['query']
-            # })
-            ack = self.syncDB.executeCommit(
-                f"update tb_sync_outbox set status='{status}' where outbox_id={data['query']}")
+            ack = self.outbox.update(data={
+                'status': status
+            }, where_clause={
+                'outbox_id': data['query']
+            })
+            # ack = self.syncDB.executeCommit(
+            #     f"update tb_sync_outbox set status='{status}' where outbox_id={data['query']}")
         # ackQuery = "update tb_sync_outbox set is_arrived=1, status='arrived' where outbox_id = {}".format(
         #     data['query'])
         # ack = self.syncDB.executeCommit(ackQuery)
