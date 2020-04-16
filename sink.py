@@ -64,17 +64,27 @@ while True:
         # check msg apakah pesan tersebut sudah pernah masuk
         # atau tidak
         accepted = False
-        checkMsgQuery = """
-            select ifnull(count(*), 0) as total from tb_sync_inbox where msg_id = {} and client_unique_id = {}
-        """
-        checkMsg = sink.db.executeFetchOne(sql=checkMsgQuery.format(
-            s['data']['msg_id'], s['data']['client_unique_id']))
-        if(checkMsg['execute_status']):
-            if(checkMsg['data']['total'] <= 0):
-                accepted = True
+        if (s['data']['msg_type'] != 'ACK'):
+            checkMsgQuery = """
+                select ifnull(count(*), 0) as total from tb_sync_inbox where msg_id = {} and client_unique_id = {}
+            """
+            checkMsg = sink.db.executeFetchOne(sql=checkMsgQuery.format(
+                s['data']['msg_id'], s['data']['client_unique_id']))
+            if(checkMsg['execute_status']):
+                if(checkMsg['data']['total'] <= 0):
+                    accepted = True
+            else:
+                sink.syslog.insert(
+                    "accepted-msg", "Execute Error: {}".format(checkMsg['error_data']['msg']))
         else:
-            sink.syslog.insert(
-                "accepted-msg", "Execute Error: {}".format(checkMsg['error_data']['msg']))
+            checkMsgQuery = """
+                select ifnull(count(*), 0) as total from tb_sync_inbox where msg_type = 'ACK' and client_unique_id = {} and query='{}'
+            """
+            checkMsg = sink.db.executeFetchOne(sql=checkMsgQuery.format(
+                s['data']['client_unique_id'], s['data']['query']))
+            if(checkMsg['execute_status']):
+                if(checkMsg['data']['total'] <= 0):
+                    accepted = True
 
         # insert message to db
         if (accepted):
