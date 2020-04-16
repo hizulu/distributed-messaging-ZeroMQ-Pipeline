@@ -391,11 +391,8 @@ class Sync:
         })
 
     def updateOutboxStatus(self, id, status, inbox_id):
-        upd = self.outbox.update({
-            'status': status
-        }, {
-            'outbox_id': id
-        })
+        upd = self.syncDB.executeCommit(
+            f"update tb_sync_outbox set status='{status}' where outbox_id={id}")
         if (upd):
             self.setAsProcessed(inbox_id)
         else:

@@ -110,7 +110,7 @@ while True:
         # insert message to db
         if (accepted):
             # print(s['data'])
-            if (s['data']['msg_type'] == 'ACK'):
+            if (s['data']['msg_type'] == 'ACKS'):
                 thread = Thread(target=sink.recvAck, args=(s['data'],))
                 thread.start()
             else:
