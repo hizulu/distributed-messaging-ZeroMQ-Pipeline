@@ -153,10 +153,6 @@ class Sync:
                     updateQ = f"update tb_sync_outbox set status='done' where table_name='{data['table_name']}' and msg_type='INS' and row_id = {data['row_id']}"
                     self.syncDB.executeCommit(updateQ)
 
-                # update inbox set done
-                query = f"update tb_sync_outbox set status = 'done' where msg_type = 'INS' and row_id={data['row_id']} and table_name = '{data['table_name']}'"
-                if (not self.syncDB.executeCommit(query)):
-                    print('GAGAL SET DONE')
                 # update PK success
                 # cek pesan lain yang menggunakan PK lama
                 # update ke PK baru
