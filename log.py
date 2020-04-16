@@ -23,8 +23,7 @@ class Log:
         #     (status = 'sent' and retry_again_at <= now())
         #     order by first_time_occur_at asc, priority asc"""
         query = f"""select * from tb_sync_outbox
-            where (status = 'waiting') or
-            (status = 'sent') 
+            where (status = 'waiting') 
             order by first_time_occur_at asc, priority asc"""
         if (env.LOG_ROW_LIMIT > 0):
             query += f' limit {env.LOG_ROW_LIMIT}'
