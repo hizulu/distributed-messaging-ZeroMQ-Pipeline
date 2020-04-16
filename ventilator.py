@@ -144,10 +144,10 @@ class Ventilator:
 
             else:
                 print('invalid, Reason: {}'.format(invalidReason))
-                self.outbox.update(data={'status': 'canceled'}, where_clause={
-                                   'outbox_id': item['outbox_id']})
-                # query = "update tb_sync_outbox set status='canceled' where outbox_id = {}".format(
-                #     item['outbox_id'])
+                # self.outbox.update(data={'status': 'canceled'}, where_clause={
+                #                    'outbox_id': item['outbox_id']})
+                query = "update tb_sync_outbox set status='canceled' where outbox_id = {}".format(
+                    item['outbox_id'])
 
-                # self.db.executeCommit(query)
+                self.db.executeCommit(query)
             # self.sender.send_string(json.dumps(encryptedPacket))

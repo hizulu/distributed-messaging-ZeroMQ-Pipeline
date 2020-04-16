@@ -10,6 +10,7 @@ from systemlog import SystemLog
 from inbox import Inbox
 from outbox import Outbox
 import os
+from threading import Thread
 
 
 class Sink:
@@ -45,6 +46,26 @@ class Sink:
         if(int(self.data['sender_id']) != int(self.data['data']['sender_id'])):
             return False
         return True
+
+    def recvAck(self, data):
+        conn = DatabaseConnection(
+            env.DB_HOST, env.DB_UNAME, env.DB_PASSWORD, env.DB_NAME)
+        obox = conn.executeFetchOne(
+            f"select * from tb_sync_outbox where outbox_id = {data['query']}")
+        ack = True
+        if(obox['data']):
+            if (obox['data']['msg_type'] == 'INS'):
+                status = 'need_pk_update'
+            else:
+                status = 'arrived'
+
+            # ack = self.outbox.update(data={
+            #     'status': status
+            # }, where_clause={
+            #     'outbox_id': data['query']
+            # })
+            ack = conn.executeCommit(
+                f"update tb_sync_outbox set status='{status}' where outbox_id={data['query']}")
 
 
 sink = Sink(env.DB_HOST, env.DB_UNAME, env.DB_PASSWORD,
@@ -89,9 +110,13 @@ while True:
         # insert message to db
         if (accepted):
             # print(s['data'])
-            insert = sink.inbox.insert(s['data'])
-            if (not insert):
-                print(sink.db.getLastCommitError())
+            if (s['data']['msg_type'] == 'ACK'):
+                thread = Thread(target=sink.recvAck, args=(s['data'],))
+                thread.start()
+            else:
+                insert = sink.inbox.insert(s['data'])
+                if (not insert):
+                    print(sink.db.getLastCommitError())
             # sql = """
             #     insert into tb_sync_inbox(row_id, table_name, msg_id, `query`, `msg_type`, client_unique_id, master_status, occur_at, first_time_occur_at)
             #     values({}, "{}", {},"{}", "{}", {}, {}, {}, {})
