@@ -18,13 +18,13 @@ class Log:
     # ///////////////////////////////////////////
 
     def getUnproceessLog(self):
-        query = f"""
+        query = f"""1796e
             select * from tb_sync_outbox
             where (status = 'waiting') or
             (status = 'sent' and retry_again_at <= now()) 
             order by first_time_occur_at asc, priority asc"""
         if (env.LOG_ROW_LIMIT > 0):
-            query += f' {env.LOG_ROW_LIMIT}'
+            query += f' limit {env.LOG_ROW_LIMIT}'
         result = self.db.executeFetchAll(sql=query)
         return result
     # ///////////////////////////////////////////

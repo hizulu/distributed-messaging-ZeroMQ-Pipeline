@@ -357,7 +357,7 @@ class Sync:
         self.syncDB.connect()
         sql = "select * from tb_sync_inbox where status = 'waiting' order by priority asc, inbox_id asc, occur_at asc"
         if (self.limitRow > 0):
-            sql += f' {self.limitRow}'
+            sql += f' limit {self.limitRow}'
         data = self.syncDB.executeFetchAll(sql, False)
         self.syncDB.close()
         return data
