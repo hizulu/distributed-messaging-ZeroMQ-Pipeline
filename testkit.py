@@ -31,8 +31,11 @@ elif (option == 'upd'):
     for item in data['data']:
         print(f"Updata data id ke {item['id']}", end="...")
         update = db.executeCommit(
-            f"update {table_name} set nama='update-{item['id']} from {env.UNIQUE_ID}' where id={item['id']}")
+            f"update {table_name} set nama='{time.time()}' where id={item['id']}")
         print("OK") if update else print("ERROR")
+        if (not update):
+            print(db.getLastCommitError())
+            break
 
 elif (option == 'del'):
     data = db.executeFetchAll(f"select id from {table_name} limit {count}")

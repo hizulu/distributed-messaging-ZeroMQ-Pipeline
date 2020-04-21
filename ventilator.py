@@ -63,7 +63,7 @@ class Ventilator:
                 if(item['msg_type'] == 'INS' or item['msg_type'] == 'DEL'):
                     # mengecek pesan ins valid menggunakan
                     # PK, client_unique_id dan nama tabel
-                    # sistem tidak akan mengirim data yang sama balik lagi ke   pengirimnya
+                    # sistem tidak akan mengirim data yang sama balik lagi ke pengirimnya
                     isInsideInboxQuery = "select * from tb_sync_inbox where client_unique_id={} and sync_token = '{}' and table_name = '{}' and msg_type='{}'".format(
                         item['client_unique_id'], item['sync_token'], item['table_name'], item['msg_type'])
 
@@ -81,26 +81,6 @@ class Ventilator:
                     if(item['client_unique_id'] not in clients):
                         isValid = True
 
-                    # filter DEL msg type
-                    # jangan kirim pesan DEL jika row yang di DEL belum selesai
-                    if(not env.MASTER_MODE and item['msg_type'] == 'DEL'):
-                        checkPRIQuery = """
-                            select * from tb_sync_inbox where msg_type = 'PRI'
-                            and status='waiting'
-                            and table_name = '{}' and row_id = '{}'
-                        """
-                        checkPRIRes = self.db.executeFetchAll(
-                            checkPRIQuery.format(item['table_name'], item['query']))
-
-                        if(checkPRIRes['execute_status']):
-                            if(len(checkPRIRes['data']) > 0):
-                                isValid = False
-                                invalidReason = "PRI not yet process"
-                            else:
-                                isValid = True
-                        else:
-                            isValid = False
-                            invalidReason = "Check PRI fail"
                 else:
                     self.syslog.insert("ventilator-valid-msg",
                                        "Error get data from outbox")
@@ -109,7 +89,26 @@ class Ventilator:
 
             # print(isValid)
             # sys.exit()
-            if(isValid):
+            if (isValid):
+                # filter DEL msg type
+                # jangan kirim pesan DEL jika row yang di DEL belum selesai
+                if(not env.MASTER_MODE and item['msg_type'] == 'DEL'):
+                    checkPRIQuery = """
+                        select * from tb_sync_inbox where msg_type = 'PRI'
+                        and status='waiting'
+                        and table_name = '{}' and row_id = '{}'
+                    """
+                    checkPRIRes = self.db.executeFetchAll(
+                        checkPRIQuery.format(item['table_name'], item['query']))
+
+                    if(checkPRIRes['execute_status']):
+                        if(len(checkPRIRes['data']) > 0):
+                            print("PRI not yet process")
+                            continue
+                    else:
+                        print("check PRI fails")
+                        continue
+
                 print('valid, Reason: {}'.format(invalidReason))
                 packet = {
                     'client_id': item['client_unique_id'],
