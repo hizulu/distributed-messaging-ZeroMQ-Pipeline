@@ -23,6 +23,8 @@ class Sync:
         self.inbox = Inbox(self.syncDB)
         self.outbox = Outbox(self.syncDB)
         self.clientIdStartFrom = 10
+        self.updateToZeroHistory = []
+        self.nextToProcess = 0
 
     def getClient(self):
         sql = "select * from tb_sync_client"
@@ -61,7 +63,8 @@ class Sync:
                     "Sync.setPriority", json.dumps(self.syncDB.getLastCommitError()))
 
     def processInsert(self, data):
-        print('Processing inbox: {}'.format(data['inbox_id']), end=": ")
+        print(f"Inbox ID: {data['inbox_id']}")
+        print(f"Type: {data['msg_type']}")
         # mengirim bahwa pesan sedang di proses
         # self.sendStatusUpdate(data, 'PROC')
 
@@ -73,7 +76,7 @@ class Sync:
             # if(env.MASTER_MODE):
             #     self.sendStatusUpdate(data, 'NEEDPK')
 
-            print('done')
+            print("Status: OK")
 
             # set result primary key to table inbox
             insert = self.inbox.update(data={
@@ -124,8 +127,33 @@ class Sync:
     # method ini digunakan untuk memproses update primary key
     # primary key yang digunakan adalah primary key dari master
     def processPrimaryKey(self, data):
+        # check apakah row id yang diproses sekarang adalah row id yang benar
+        if (self.nextToProcess == 0 or self.nextToProcess == data['row_id']):
+            # check apakah pri ini ada di history update 0
+            if (len(self.updateToZeroHistory) > 0):
+                # mencari apakah ada history
+                code = f"{data['table_name']}{data['row_id']}"
+                if (code in self.updateToZeroHistory):
+                    row_id = data['row_id']
+                    data['row_id'] = 0
+                    self.doUpdatePK(data)
+                    self.updateToZeroHistory(code)
+                    self.nextToProcess = 0
+                else:
+                    # tidak ada history, exekusi update
+                    self.doUpdatePK(data)
+                    self.nextToProcess = data['row_id']
+            else:
+                # langsung eksekusi update
+                self.doUpdatePK(data)
+                self.nextToProcess = data['row_id']
+
         # mencari nama kolom primary key
         # print(db_name)
+
+    def doUpdatePK(self, data):
+        print(f"Inbox ID: {data['inbox_id']}")
+        print(f"Type: {data['msg_type']}")
         db_name = env.DB_NAME
         sql = """
             select COLUMN_NAME from information_schema.COLUMNS
@@ -136,12 +164,15 @@ class Sync:
         if(res['execute_status']):
             primary_key = res['data']['COLUMN_NAME']
             # update primary key
+            update_from = data['row_id']
+            update_to = data['query']
             sql = "update {} set {}={} where {}={}"
             update = self.syncDB.executeCommit(sql.format(
-                data['table_name'], primary_key, data['query'], primary_key, data['row_id']))
+                data['table_name'], primary_key, update_to, primary_key, update_from))
 
             if (update):
                 # set status outbox menjadi done
+
                 if (data['msg_id'] == 0):
                     # pesan PRI di generate oleh slave
                     # mengambil pesan INS
@@ -172,24 +203,19 @@ class Sync:
                         print("CHECK PESAN LAIN ERROR: {}".format(
                             res['error_data']['msg']))
                 self.setAsProcessed(data['inbox_id'])
-                print("done")
+                print("Status: OK")
             else:
-                # update primary key to 0
-                # as temp
-                print('error, downgrade priority')
+                # ubah primary key goal menjadi 0
                 update = self.syncDB.executeCommit(sql.format(
-                    data['table_name'], primary_key, 0, primary_key, data['row_id']))
-                if(update):
-                    self.inbox.update(data={
-                        'priority': 3,
-                        'row_id': 0,
-                    }, where_clause={
-                        'inbox_id': data['inbox_id']
-                    })
-                else:
-                    self.setPriority(data['inbox_id'], 'tb_sync_inbox', 3)
-                self.systemlog.insert(
-                    "Sync.processPrimaryKey", json.dumps(self.syncDB.getLastCommitError()))
+                    data['table_name'], primary_key, 0, primary_key, update_from))
+
+                self.inbox.update(data={
+                    'priority': 3,
+                    'row_id': 0,
+                }, where_clause={
+                    'inbox_id': data['inbox_id']
+                })
+                print("Status: ERROR")
 
     def processUpdate(self, data):
         # self.sendStatusUpdate(data, "PROC")
@@ -482,13 +508,7 @@ while True:
     if(inbox['execute_status']):
         if(inbox['data']):
             for item in inbox['data']:
-                # proses pesan selain INS, UPD dan DEL terlebih dahulu
-                # jgn proses pesan utama jika masih ada pesan INS UPD DEL yang belum selesai
-
-                # jika proses adalah INS UPD DEL, lakukan pengecekan pesan tertunda
-                delayMsgInboxQ = "select count(*) from tb_sync_inbox where status "
-                print(
-                    "[{}] -> #{}".format(datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S"), item['msg_id']), end=" ")
+                print('---------------------')
                 msgType = item['msg_type']
                 if(msgType == 'INS'):
                     sync.processInsert(item)
