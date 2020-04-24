@@ -148,8 +148,9 @@ class Sync:
             self.setAsProcessed(data['inbox_id'])
             print("Status: OK Same PK")
             return True
-
+        print(f"Sebelum: {self.updateToZeroHistory}")
         self.getZeroPKHistory()
+        print(f"Sesudah: {self.updateToZeroHistory}")
         # check apakah pri ini ada di history update 0
         row_id = data['row_id']
 
