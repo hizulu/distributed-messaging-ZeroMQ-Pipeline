@@ -130,7 +130,7 @@ class Sync:
         print(f"Inbox ID: {data['inbox_id']}")
         print(f"Type: {data['msg_type']}")
 
-        if (data['row_id'] == data['query']):
+        if (data['row_id'] == int(data['query'])):
             self.setAsProcessed(data['inbox_id'])
             print("Status: OK Same PK")
             return True
@@ -156,7 +156,7 @@ class Sync:
                 self.doUpdatePK(data)
 
             pri_msg_check = self.syncDB.executeCommit(
-                f"select count(*) as total from tb_sync_inbox where msg_type='PRI' and table_name='{data['table_name']}' and query = '{row_id}' and status='done'")
+                f"select count(*) as total from tb_sync_inbox where msg_type='PRI' and table_name='{data['table_name']}' and `query` = '{row_id}' and status='done'")
 
             if (pri_msg_check['data']['total'] > 0):
                 self.nextToProcess = 0

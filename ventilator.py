@@ -58,8 +58,6 @@ class Ventilator:
             # proses mengecek pesan yang valid
             # pengecekan dilakukan agar sebuah pesan tidak kembali ke pengirimnya
             # atau terjadi looping data terus menerus
-            print("[{}] -> #{} to {} ->".format(datetime.datetime.now().strftime(
-                "%d-%m-%Y %H:%M:%S"), item['outbox_id'], item['client_unique_id']), end=" ")
             isValid = False
             invalidReason = ''
             if(item['msg_type'] == 'INS' or item['msg_type'] == 'DEL' or item['msg_type'] == 'UPD'):
