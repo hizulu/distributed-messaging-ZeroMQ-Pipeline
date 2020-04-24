@@ -73,11 +73,12 @@ sink = Sink(env.DB_HOST, env.DB_UNAME, env.DB_PASSWORD,
 while True:
     s = sink.recv_json()
     # print(s)
+    print("------------------------")
     if ('error' in s):
-        print("Invalid secret key or IV key")
+        print("Status: Invalid secret key or IV key")
     else:
-        print("[{}] -> #{}".format(datetime.datetime.now().strftime(
-            "%d-%m-%Y %H:%M:%S"), s['data']['msg_id']), end=" ")
+        print(f"MSG ID: {s['data']['msg_id']}")
+        print(f"Type: {s['data']['msg_type']}")
         # authenticate message
         # if(not sink.auth()):
         #     continue
@@ -108,6 +109,7 @@ while True:
                     accepted = True
 
         # insert message to db
+        print("Status: ", end="")
         if (accepted):
             # print(s['data'])
             if (s['data']['msg_type'] == 'ACKS'):
@@ -124,9 +126,9 @@ while True:
 
             # insert = sink.db.executeCommit(autoconnect=False, sql=sql.format(
             #     s['data']['row_id'], s['data']['table_name'], s['data']['msg_id'], s['data']['data'], s['data']['msg_type'], s['data']['sender_id'], s['data']['master_status'], s['data']['unix_timestamp']))
-            print('accepted')
+            print('Accepted')
         else:
-            print('rejected')
+            print('Rejected')
 
         # send back which message is received using worker
         # only reply non-ACK msg

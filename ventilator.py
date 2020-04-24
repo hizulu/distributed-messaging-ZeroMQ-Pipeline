@@ -52,13 +52,16 @@ class Ventilator:
         sink.connect(self.sinkAddr)
         i = 1
         for item in data:
+            print("---------------------")
+            print(f"Outbox ID: {item['outbox_id']}")
+            print(f"Type: {item['msg_type']}")
             # proses mengecek pesan yang valid
             # pengecekan dilakukan agar sebuah pesan tidak kembali ke pengirimnya
             # atau terjadi looping data terus menerus
             print("[{}] -> #{} to {} ->".format(datetime.datetime.now().strftime(
                 "%d-%m-%Y %H:%M:%S"), item['outbox_id'], item['client_unique_id']), end=" ")
             isValid = False
-            invalidReason = 'Loop'
+            invalidReason = ''
             if(item['msg_type'] == 'INS' or item['msg_type'] == 'DEL' or item['msg_type'] == 'UPD'):
                 if(item['msg_type'] == 'INS' or item['msg_type'] == 'DEL'):
                     # mengecek pesan ins valid menggunakan
@@ -89,7 +92,9 @@ class Ventilator:
 
             # print(isValid)
             # sys.exit()
+            print("Status: ", end="")
             if (isValid):
+
                 # filter DEL msg type
                 # jangan kirim pesan DEL jika row yang di DEL belum selesai
                 if(not env.MASTER_MODE and item['msg_type'] == 'DEL'):
@@ -109,7 +114,7 @@ class Ventilator:
                         print("check PRI fails")
                         continue
 
-                print('valid, Reason: {}'.format(invalidReason))
+                print('Valid')
                 packet = {
                     'client_id': item['client_unique_id'],
                     'client_key': item['client_key'],
@@ -142,7 +147,8 @@ class Ventilator:
                 file.close()
 
             else:
-                print('invalid, Reason: {}'.format(invalidReason))
+                invalidReason = 'Loop'
+                print('Invalid, Reason: {}'.format(invalidReason))
                 # self.outbox.update(data={'status': 'canceled'}, where_clause={
                 #                    'outbox_id': item['outbox_id']})
                 query = "update tb_sync_outbox set status='canceled' where outbox_id = {}".format(

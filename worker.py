@@ -42,8 +42,9 @@ while True:
     #     print('sukses')
     # else:
     #     print('gagal')
-    print("[{}] -> #{}".format(datetime.datetime.now().strftime(
-        "%d-%m-%Y %H:%M:%S"), s['msg_id']))
+    print("---------------------")
+    print(f"Outbox ID: {s['msg_id']}")
+    print(f"Type: {s['msg_type']}")
     enc = AES256()
     jsonPacket = {
         'query': s['query'],

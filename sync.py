@@ -127,33 +127,48 @@ class Sync:
     # method ini digunakan untuk memproses update primary key
     # primary key yang digunakan adalah primary key dari master
     def processPrimaryKey(self, data):
+        print(f"Inbox ID: {data['inbox_id']}")
+        print(f"Type: {data['msg_type']}")
+
+        if (data['row_id'] == data['query']):
+            self.setAsProcessed(data['inbox_id'])
+            print("Status: OK Same PK")
+            return True
+
         # check apakah row id yang diproses sekarang adalah row id yang benar
         if (self.nextToProcess == 0 or self.nextToProcess == data['row_id']):
             # check apakah pri ini ada di history update 0
+            row_id = data['row_id']
             if (len(self.updateToZeroHistory) > 0):
                 # mencari apakah ada history
                 code = f"{data['table_name']}{data['row_id']}"
                 if (code in self.updateToZeroHistory):
-                    row_id = data['row_id']
+
                     data['row_id'] = 0
-                    self.doUpdatePK(data)
-                    self.updateToZeroHistory(code)
-                    self.nextToProcess = 0
+                    update = self.doUpdatePK(data)
+                    if (update):
+                        self.updateToZeroHistory.remove(code)
                 else:
                     # tidak ada history, exekusi update
                     self.doUpdatePK(data)
-                    self.nextToProcess = data['row_id']
             else:
                 # langsung eksekusi update
                 self.doUpdatePK(data)
-                self.nextToProcess = data['row_id']
 
+            pri_msg_check = self.syncDB.executeCommit(
+                f"select count(*) as total from tb_sync_inbox where msg_type='PRI' and table_name='{data['table_name']}' and query = '{row_id}' and status='done'")
+
+            if (pri_msg_check['data']['total'] > 0):
+                self.nextToProcess = 0
+            else:
+                self.nextToProcess = row_id
+        else:
+            print(
+                f"Status: Next != 0 atau Next {self.nextToProcess}!={data['row_id']}")
         # mencari nama kolom primary key
         # print(db_name)
 
     def doUpdatePK(self, data):
-        print(f"Inbox ID: {data['inbox_id']}")
-        print(f"Type: {data['msg_type']}")
         db_name = env.DB_NAME
         sql = """
             select COLUMN_NAME from information_schema.COLUMNS
@@ -161,9 +176,8 @@ class Sync:
             and COLUMN_KEY='PRI'
         """.format(db_name, data['table_name'])
         res = self.syncDB.executeFetchOne(sql)
-        if(res['execute_status']):
+        if (res['execute_status']):
             primary_key = res['data']['COLUMN_NAME']
-            # update primary key
             update_from = data['row_id']
             update_to = data['query']
             sql = "update {} set {}={} where {}={}"
@@ -172,7 +186,6 @@ class Sync:
 
             if (update):
                 # set status outbox menjadi done
-
                 if (data['msg_id'] == 0):
                     # pesan PRI di generate oleh slave
                     # mengambil pesan INS
@@ -203,23 +216,17 @@ class Sync:
                         print("CHECK PESAN LAIN ERROR: {}".format(
                             res['error_data']['msg']))
                 self.setAsProcessed(data['inbox_id'])
-                print("Status: OK")
+                return True
             else:
-                # ubah primary key goal menjadi 0
                 update = self.syncDB.executeCommit(sql.format(
                     data['table_name'], primary_key, 0, primary_key, update_from))
-
-                self.inbox.update(data={
-                    'priority': 3,
-                    'row_id': 0,
-                }, where_clause={
-                    'inbox_id': data['inbox_id']
-                })
-                print("Status: ERROR")
+                return False
+                # ubah primary key goal menjadi 0
 
     def processUpdate(self, data):
         # self.sendStatusUpdate(data, "PROC")
-
+        print(f"Inbox ID: {data['inbox_id']}")
+        print(f"Type: {data['msg_type']}")
         # cek apakah pesan ini lebih baru dibantingkan data sekarnag
         primary_key = self._getPrimaryKeyColumn(data['table_name'])
         row_data = self.syncDB.executeFetchOne(
@@ -230,15 +237,16 @@ class Sync:
             # data yang di proses adalah data baru
             execute = self.syncDB.executeCommit(data['query'])
             if (not execute):
-                print("ERROR")
+                print("Status: ERROR")
             else:
                 self.setAsProcessed(data['inbox_id'])
                 self.sendStatusUpdate(data, "DONE")
-                print("OK")
+                print("Status: OK")
         else:
             # data yang di proses adlaah data lama
             self.setAsProcessed(data['inbox_id'])
             self.sendStatusUpdate(data, "DONE")
+            print("Status: OLD DATA")
 
     def processDelete(self, data):
         # self.sendStatusUpdate(data, "PROC")
@@ -246,6 +254,8 @@ class Sync:
         # berdasarkan primari key yang masuk
         # jika ada mata update inbox tersebut jadi terproses
         # jika tidak ada lakukan delete seperti biasa
+        print(f"Inbox ID: {data['inbox_id']}")
+        print(f"Type: {data['msg_type']}")
         checkQuery = """
             select count(inbox_id) as total from tb_sync_inbox where msg_type = 'PRI'
             and status = 'waiting'
@@ -265,16 +275,16 @@ class Sync:
                     data['table_name'], pkColumnName, data['row_id']))
 
                 if(delete):
-                    print('done')
                     self.sendStatusUpdate(data, "DONE")
                     self.setAsProcessed(data['inbox_id'])
+                    print("Status: OK")
                 else:
                     self.setPriority(data['inbox_id'], 'tb_sync_inbox', 3)
-                    print('error: {}'.format(
-                        self.syncDB.getLastCommitError()['msg']))
+                    print("Status: ERROR")
 
     def processAck(self, data):
-
+        print(f"Inbox ID: {data['inbox_id']}")
+        print(f"Type: {data['msg_type']}")
         obox = self.syncDB.executeFetchOne(
             f"select * from tb_sync_outbox where outbox_id = {data['query']}")
         ack = True
@@ -297,6 +307,7 @@ class Sync:
         if(not ack):
             self.outbox.update(data={'status': 'error'}, where_clause={
                                'outbox_id': data['msg_id']})
+            print("Status: ERROR")
             # errorQuery = 'update tb_sync_outbox set is_error=1 where outbox_id = {}'.format(
             #     data['msg_id'])
             # self.syncDB.executeCommit(errorQuery)
@@ -305,9 +316,11 @@ class Sync:
             #     data['inbox_id'], self.statusDB.getLastCommitError()['msg']))
         else:
             self.setAsProcessed(data['inbox_id'])
-        return True
+            print("Status: OK")
 
     def processReg(self, data):
+        print(f"Inbox ID: {data['inbox_id']}")
+        print(f"Type: {data['msg_type']}")
         if (env.MASTER_MODE):
             time.sleep(0.2)
             regData = data['query'].split('#')
@@ -357,7 +370,7 @@ class Sync:
                     }
                     self.outbox.insert(outbox)
                     self.setAsProcessed(data['inbox_id'])
-                    print("OK")
+                    print("Status: OK")
         else:
             outbox = {
                 'row_id': 0,
@@ -373,7 +386,7 @@ class Sync:
             }
             self.outbox.insert(outbox)
             self.setAsProcessed(data['inbox_id'])
-            print('OK')
+            print(f'Status: ERROR')
 
     def getData(self):
         self.syncDB.connect()
