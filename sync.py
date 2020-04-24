@@ -126,8 +126,20 @@ class Sync:
             print('error, downgrade priority')
         return True
 
-    # method ini digunakan untuk memproses update primary key
-    # primary key yang digunakan adalah primary key dari master
+    def getZeroPKHistory(self):
+        file = open(self.PKFileName, 'r')
+        file_value = file.read()
+        if (file_value):
+            self.updateToZeroHistory = set(literal_eval(file_value))
+        file.close()
+
+    def updateZeroPKHistory(self):
+        file = open(self.PKFileName, 'w')
+        file.write(str(list(self.updateToZeroHistory)))
+        file.close()
+        # method ini digunakan untuk memproses update primary key
+        # primary key yang digunakan adalah primary key dari master
+
     def processPrimaryKey(self, data):
         print(f"Inbox ID: {data['inbox_id']}")
         print(f"Type: {data['msg_type']}")
@@ -137,29 +149,23 @@ class Sync:
             print("Status: OK Same PK")
             return True
 
+        self.getZeroPKHistory()
         # check apakah pri ini ada di history update 0
         row_id = data['row_id']
-        if (len(self.updateToZeroHistory) > 0):
-            # mencari apakah ada history
-            file = open(self.PKFileName, 'r')
-            file_value = file.read()
-            if (file_value):
-                self.updateToZeroHistory = set(literal_eval(file_value))
-            file.close()
 
+        if (len(self.updateToZeroHistory) > 0):
+            # mencari apakah ada history\
             code = f"{data['table_name']}{data['row_id']}"
             if (data['table_name'] in item for item in self.updateToZeroHistory):
                 if (code in self.updateToZeroHistory):
+                    print("Mode: 0 Exec")
                     data['row_id'] = 0
                     res = self.doUpdatePK(data)
                     if (res):
                         self.updateToZeroHistory.remove(code)
-                        file = open(self.PKFileName, 'w')
-                        file.write(str(list(self.updateToZeroHistory)))
-                        file.close()
                 else:
                     # skip
-                    return True
+                    res = self.doUpdatePK(data)
             else:
                 # tidak ada history, exekusi update
                 res = self.doUpdatePK(data)
@@ -169,6 +175,7 @@ class Sync:
 
         print("Status: ", end="")
         print("OK") if res else print("ERROR")
+        self.updateZeroPKHistory()
         # mencari nama kolom primary key
         # print(db_name)
 
@@ -227,9 +234,6 @@ class Sync:
                 if (data['table_name'] not in item for item in self.updateToZeroHistory):
                     code = f"{data['table_name']}{data['row_id']}"
                     self.updateToZeroHistory.add(code)
-                    file = open(self.PKFileName, 'w')
-                    file.write(str(list(self.updateToZeroHistory)))
-                    file.close()
                     update = self.syncDB.executeCommit(sql.format(
                         data['table_name'], primary_key, 0, primary_key, update_from))
                 return False
