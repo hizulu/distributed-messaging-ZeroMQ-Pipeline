@@ -157,18 +157,16 @@ class Sync:
         if (len(self.updateToZeroHistory) > 0):
             # mencari apakah ada history\
             code = f"{data['table_name']}{data['row_id']}"
-            if (data['table_name'] in item for item in self.updateToZeroHistory):
-                if (code in self.updateToZeroHistory):
-                    print("Mode: 0 Exec")
-                    data['row_id'] = 0
-                    res = self.doUpdatePK(data)
-                    if (res):
-                        self.updateToZeroHistory.remove(code)
-                else:
-                    # skip
-                    res = self.doUpdatePK(data)
+            zeroExecMode = False
+
+            if (code in self.updateToZeroHistory):
+                print("Mode: 0 Exec")
+                data['row_id'] = 0
+                res = self.doUpdatePK(data)
+                if (res):
+                    self.updateToZeroHistory.remove(code)
             else:
-                # tidak ada history, exekusi update
+                # skip
                 res = self.doUpdatePK(data)
         else:
             # langsung eksekusi update
@@ -232,7 +230,13 @@ class Sync:
                 return True
             else:
                 # update to zero history
-                if (data['table_name'] not in item for item in self.updateToZeroHistory):
+                allowToAdd = True
+                for item in self.updateToZeroHistory:
+                    if (data['table_name'] in item):
+                        allowToAdd = False
+                        break
+
+                if (allowToAdd):
                     code = f"{data['table_name']}{data['row_id']}"
                     self.updateToZeroHistory.add(code)
                     update = self.syncDB.executeCommit(sql.format(
