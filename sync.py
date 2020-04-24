@@ -8,6 +8,8 @@ import json
 import time
 import datetime
 import threading
+import os
+from ast import literal_eval
 
 
 class Sync:
@@ -23,8 +25,8 @@ class Sync:
         self.inbox = Inbox(self.syncDB)
         self.outbox = Outbox(self.syncDB)
         self.clientIdStartFrom = 10
-        self.updateToZeroHistory = []
-        self.nextToProcess = 0
+        self.updateToZeroHistory = set([])
+        self.PKFileName = 'pk'
 
     def getClient(self):
         sql = "select * from tb_sync_client"
@@ -135,36 +137,35 @@ class Sync:
             print("Status: OK Same PK")
             return True
 
-        # check apakah row id yang diproses sekarang adalah row id yang benar
-        if (self.nextToProcess == 0 or self.nextToProcess == data['row_id']):
-            # check apakah pri ini ada di history update 0
-            row_id = data['row_id']
-            if (len(self.updateToZeroHistory) > 0):
-                # mencari apakah ada history
-                code = f"{data['table_name']}{data['row_id']}"
-                if (code in self.updateToZeroHistory):
+        # check apakah pri ini ada di history update 0
+        row_id = data['row_id']
+        if (len(self.updateToZeroHistory) > 0):
+            # mencari apakah ada history
+            file = open(self.PKFileName, 'r')
+            file_value = file.read()
+            if (file_value):
+                self.updateToZeroHistory = set(literal_eval(file_value))
+            file.close()
 
-                    data['row_id'] = 0
-                    update = self.doUpdatePK(data)
-                    if (update):
-                        self.updateToZeroHistory.remove(code)
-                else:
-                    # tidak ada history, exekusi update
-                    self.doUpdatePK(data)
+            code = f"{data['table_name']}{data['row_id']}"
+            if (code in self.updateToZeroHistory):
+
+                data['row_id'] = 0
+                res = self.doUpdatePK(data)
+                if (res):
+                    self.updateToZeroHistory.remove(code)
+                    file = open(self.PKFileName, 'w')
+                    file.write(str(list(self.updateToZeroHistory)))
+                    file.close()
             else:
-                # langsung eksekusi update
-                self.doUpdatePK(data)
-
-            pri_msg_check = self.syncDB.executeCommit(
-                f"select count(*) as total from tb_sync_inbox where msg_type='PRI' and table_name='{data['table_name']}' and `query` = '{row_id}' and status='done'")
-
-            if (pri_msg_check['data']['total'] > 0):
-                self.nextToProcess = 0
-            else:
-                self.nextToProcess = row_id
+                # tidak ada history, exekusi update
+                res = self.doUpdatePK(data)
         else:
-            print(
-                f"Status: Next != 0 atau Next {self.nextToProcess}!={data['row_id']}")
+            # langsung eksekusi update
+            res = self.doUpdatePK(data)
+
+        print("Status: ", end="")
+        print("OK") if res else print("ERROR")
         # mencari nama kolom primary key
         # print(db_name)
 
@@ -180,6 +181,7 @@ class Sync:
             primary_key = res['data']['COLUMN_NAME']
             update_from = data['row_id']
             update_to = data['query']
+            print(f"From: {update_from} To: {update_to}")
             sql = "update {} set {}={} where {}={}"
             update = self.syncDB.executeCommit(sql.format(
                 data['table_name'], primary_key, update_to, primary_key, update_from))
@@ -218,6 +220,12 @@ class Sync:
                 self.setAsProcessed(data['inbox_id'])
                 return True
             else:
+                # update to zero history
+                code = f"{data['table_name']}{data['row_id']}"
+                self.updateToZeroHistory.add(code)
+                file = open(self.PKFileName, 'w')
+                file.write(str(list(self.updateToZeroHistory)))
+                file.close()
                 update = self.syncDB.executeCommit(sql.format(
                     data['table_name'], primary_key, 0, primary_key, update_from))
                 return False
