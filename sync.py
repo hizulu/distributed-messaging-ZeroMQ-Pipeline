@@ -148,15 +148,18 @@ class Sync:
             file.close()
 
             code = f"{data['table_name']}{data['row_id']}"
-            if (code in self.updateToZeroHistory):
-
-                data['row_id'] = 0
-                res = self.doUpdatePK(data)
-                if (res):
-                    self.updateToZeroHistory.remove(code)
-                    file = open(self.PKFileName, 'w')
-                    file.write(str(list(self.updateToZeroHistory)))
-                    file.close()
+            if (data['table_name'] in item for item in self.updateToZeroHistory):
+                if (code in self.updateToZeroHistory):
+                    data['row_id'] = 0
+                    res = self.doUpdatePK(data)
+                    if (res):
+                        self.updateToZeroHistory.remove(code)
+                        file = open(self.PKFileName, 'w')
+                        file.write(str(list(self.updateToZeroHistory)))
+                        file.close()
+                else:
+                    # skip
+                    return True
             else:
                 # tidak ada history, exekusi update
                 res = self.doUpdatePK(data)
@@ -221,13 +224,14 @@ class Sync:
                 return True
             else:
                 # update to zero history
-                code = f"{data['table_name']}{data['row_id']}"
-                self.updateToZeroHistory.add(code)
-                file = open(self.PKFileName, 'w')
-                file.write(str(list(self.updateToZeroHistory)))
-                file.close()
-                update = self.syncDB.executeCommit(sql.format(
-                    data['table_name'], primary_key, 0, primary_key, update_from))
+                if (data['table_name'] not in item for item in self.updateToZeroHistory):
+                    code = f"{data['table_name']}{data['row_id']}"
+                    self.updateToZeroHistory.add(code)
+                    file = open(self.PKFileName, 'w')
+                    file.write(str(list(self.updateToZeroHistory)))
+                    file.close()
+                    update = self.syncDB.executeCommit(sql.format(
+                        data['table_name'], primary_key, 0, primary_key, update_from))
                 return False
                 # ubah primary key goal menjadi 0
 
@@ -550,8 +554,11 @@ while True:
                     print(sync.updateOutboxStatus(
                         item['query'], "need_pk_update", item['inbox_id']))
                 elif (msgType == 'DONE'):
-                    print(sync.updateOutboxStatus(
-                        item['query'], "done", item['inbox_id']))
+                    print(f"Inbox_id: {item['inbox_id']}")
+                    print(f"Type: {item['msg_type']}")
+                    sync.updateOutboxStatus(
+                        item['query'], "done", item['inbox_id'])
+                    print("Status: OK")
                 else:
                     sync.syncDB.insError("Msg type not found for id=" +
                                          str(item['inbox_id']))
