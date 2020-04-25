@@ -229,8 +229,7 @@ class Sync:
                 return True
             else:
                 # update to zero history
-                self.setPriority(data['inbox_id'],
-                                 'tb_sync_inbox', data['priority'] + 1)
+                self.setPriority(data['inbox_id'], 'tb_sync_inbox', 3)
                 allowToAdd = True
                 for item in self.updateToZeroHistory:
                     if (data['table_name'] in item):
