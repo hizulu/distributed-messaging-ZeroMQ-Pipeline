@@ -139,7 +139,7 @@ class Sync:
         file = open(self.PRIFileName, 'r')
         file_value = file.read()
         if (file_value):
-            self.updateToZeroHistory = literal_eval(file_value)
+            self.nextPriToProcess = literal_eval(file_value)
         file.close()
 
     def updateZeroPKHistory(self):
@@ -149,7 +149,7 @@ class Sync:
 
     def updatePriToProcess(self):
         file = open(self.PRIFileName, 'w')
-        file.write(str(self.updateToZeroHistory))
+        file.write(str(self.nextPriToProcess))
         file.close()
 
     def processPrimaryKey(self, data):
@@ -162,6 +162,7 @@ class Sync:
             return True
 
         self.getPriToProcess()
+        print(self.nextPriToProcess)
         if (data['table_name'] in self.nextPriToProcess):
             if (int(data['query']) != self.nextPriToProcess[data['table_name']]):
                 print(
