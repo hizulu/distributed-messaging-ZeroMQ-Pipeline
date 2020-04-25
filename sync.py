@@ -27,6 +27,8 @@ class Sync:
         self.clientIdStartFrom = 10
         self.updateToZeroHistory = set([])
         self.PKFileName = 'pk'
+        self.nextPriToProcess = dict()
+        self.PRIFileName = 'pri'
 
     def getClient(self):
         sql = "select * from tb_sync_client"
@@ -133,12 +135,22 @@ class Sync:
             self.updateToZeroHistory = set(literal_eval(file_value))
         file.close()
 
+    def getPriToProcess(self):
+        file = open(self.PRIFileName, 'r')
+        file_value = file.read()
+        if (file_value):
+            self.updateToZeroHistory = literal_eval(file_value)
+        file.close()
+
     def updateZeroPKHistory(self):
         file = open(self.PKFileName, 'w')
         file.write(str(list(self.updateToZeroHistory)))
         file.close()
-        # method ini digunakan untuk memproses update primary key
-        # primary key yang digunakan adalah primary key dari master
+
+    def updatePriToProcess(self):
+        file = open(self.PRIFileName, 'w')
+        file.write(str(self.updateToZeroHistory))
+        file.close()
 
     def processPrimaryKey(self, data):
         print(f"Inbox ID: {data['inbox_id']}")
@@ -149,7 +161,15 @@ class Sync:
             print("Status: OK Same PK")
             return True
 
+        self.getPriToProcess()
+        if (data['table_name'] in self.nextPriToProcess):
+            if (int(data['query']) != self.nextPriToProcess[data['table_name']]):
+                print(
+                    f"Status: {data['query']}/{self.nextPriToProcess[data['table_name']]}")
+                return True
+
         self.getZeroPKHistory()
+
         # check apakah pri ini ada di history update 0
         row_id = data['row_id']
 
@@ -196,6 +216,14 @@ class Sync:
 
             if (update):
                 # set status outbox menjadi done
+
+                if (update_from == 0):
+                    self.nextPriToProcess.pop(data['table_name'])
+                else:
+                    self.nextPriToProcess[data['table_name']] = update_from
+
+                self.updatePriToProcess()
+
                 if (data['msg_id'] == 0):
                     # pesan PRI di generate oleh slave
                     # mengambil pesan INS
