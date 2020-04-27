@@ -602,7 +602,7 @@ while True:
                                          str(item['inbox_id']))
 
                 # print(f"finish at: {time.time()}")
-                file = open("proctime.text", 'a')
+                file = open("proctime.text", 'w')
                 file.write(f"{time.time()}\n")
                 file.close()
 
