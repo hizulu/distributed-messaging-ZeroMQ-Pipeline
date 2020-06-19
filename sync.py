@@ -440,10 +440,30 @@ class Sync:
 
     def getData(self):
         self.syncDB.connect()
-        sql = "select * from tb_sync_inbox where status = 'waiting' order by priority asc, inbox_id asc, occur_at asc"
+        sql = "select * from tb_sync_inbox where status = 'waiting' and msg_type <> 'PRI' order by priority asc, inbox_id asc, occur_at asc"
         if (self.limitRow > 0):
             sql += f' limit {self.limitRow}'
-        data = self.syncDB.executeFetchAll(sql, False)
+
+        self.getPriToProcess()
+        additionalQuery = ""
+        excludeTables = ""
+        # tambah query untuk mendapatkan pri yang harus diproses
+        if (len(self.nextPriToProcess) > 0):
+            for item in self.nextPriToProcess:
+                additionalQuery += f"union select * from tb_sync_inbox where status = 'waiting' and msg_type = 'PRI' and table_name = '{item}' and query = '{self.nextPriToProcess[item]}' order by first_time_occur_at asc, priority asc"
+                if (excludeTables != ''):
+                    excludeTables += f" or table_name <> '{item}'"
+                else:
+                    excludeTables += f"table_name <> '{item}'"
+
+        # buat query untuk mengambil PRI masing2 tabel kecuali excluded table
+        if (excludeTables == ''):
+            additionalQuery += f" union select * from tb_sync_inbox where status = 'waiting' order by first_time_occur_at asc, priority asc"
+        else:
+            additionalQuery += f" union select * from tb_sync_inbox where status = 'waiting' and ({excludeTables}) order by first_time_occur_at asc, priority asc group by table_name"
+
+        print(sql + additionalQuery)
+        data = self.syncDB.executeFetchAll(sql + additionalQuery, False)
         self.syncDB.close()
         return data
 
