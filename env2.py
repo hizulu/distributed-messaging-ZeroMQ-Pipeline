@@ -1,0 +1,14 @@
+MASTER_MODE = True
+DB_HOST = 'localhost'
+DB_UNAME = 'rama'
+DB_PASSWORD = 'ramapradana24'
+DB_PORT = 3306
+DB_NAME = 'db_federated'
+UNIQUE_ID = 1
+SINK_ADDR = 'tcp://192.168.229.1:5558'
+SECRET_KEY = 'pTbkqdQBaNxJGLWY'
+IV_KEY = 'PWlUhNdDwAebzYcu'
+LOG_ROW_LIMIT = 100
+VEN_WORKER_ADDR = 'tcp://*:5557'
+LIMIT_PROC_ROW = 0
+THREAD_LIMIT = 4
