@@ -7,7 +7,7 @@ DB_PORT = 3306
 DB_NAME = "db_autotrigger"
 
 UNIQUE_ID = 234
-SINK_ADDR = 'tcp://192.168.229.1:5558'
+SINK_ADDR = 'tcp://192.168.193.1:5558'
 # sink
 SECRET_KEY = "sice2lrit9q2wvzx"
 IV_KEY = "6YM6LfUkMAx6A27U"
