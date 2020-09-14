@@ -266,6 +266,9 @@ class Sync:
                         break
 
                 if (allowToAdd):
+                    self.nextPriToProcess[data['table_name']] = update_from
+                    self.updatePriToProcess()
+
                     code = f"{data['table_name']}{data['row_id']}"
                     self.updateToZeroHistory.add(code)
                     update = self.syncDB.executeCommit(sql.format(
@@ -440,7 +443,7 @@ class Sync:
 
     def getData(self):
         self.syncDB.connect()
-        sql = "select * from tb_sync_inbox where status = 'waiting' and msg_type <> 'PRI' order by priority asc, inbox_id asc, occur_at asc"
+        sql = "(select * from tb_sync_inbox where status = 'waiting' and msg_type <> 'PRI' order by priority asc, inbox_id asc, occur_at asc)"
         if (self.limitRow > 0):
             sql += f' limit {self.limitRow}'
 
@@ -450,7 +453,7 @@ class Sync:
         # tambah query untuk mendapatkan pri yang harus diproses
         if (len(self.nextPriToProcess) > 0):
             for item in self.nextPriToProcess:
-                additionalQuery += f"union select * from tb_sync_inbox where status = 'waiting' and msg_type = 'PRI' and table_name = '{item}' and query = '{self.nextPriToProcess[item]}' order by first_time_occur_at asc, priority asc"
+                additionalQuery += f" union (select * from tb_sync_inbox where status = 'waiting' and msg_type = 'PRI' and table_name = '{item}' and query = '{self.nextPriToProcess[item]}' order by first_time_occur_at asc, priority asc)"
                 if (excludeTables != ''):
                     excludeTables += f" or table_name <> '{item}'"
                 else:
@@ -458,11 +461,13 @@ class Sync:
 
         # buat query untuk mengambil PRI masing2 tabel kecuali excluded table
         if (excludeTables == ''):
-            additionalQuery += f" union select * from tb_sync_inbox where status = 'waiting' order by first_time_occur_at asc, priority asc"
+            # mengambil pesan PK masing2 1 pada setiap tabel
+            # additionalQuery = ''
+            additionalQuery += f" union (SELECT * FROM tb_sync_inbox WHERE msg_type = 'PRI' AND STATUS='waiting' GROUP BY table_name ORDER BY first_time_occur_at ASC, priority ASC)"
         else:
-            additionalQuery += f" union select * from tb_sync_inbox where status = 'waiting' and ({excludeTables}) order by first_time_occur_at asc, priority asc group by table_name"
+            additionalQuery += f" union (select * from tb_sync_inbox where status = 'waiting' and msg_type = 'PRI' and ({excludeTables}) group by table_name order by first_time_occur_at asc, priority asc)"
 
-        print(sql + additionalQuery)
+        # print(sql + additionalQuery)
         data = self.syncDB.executeFetchAll(sql + additionalQuery, False)
         self.syncDB.close()
         return data
@@ -588,10 +593,14 @@ sync = Sync()
 
 while True:
     inbox = sync.getData()
+    # sys.exit()
     if(inbox['execute_status']):
-        if(inbox['data']):
+        if (inbox['data']):
+            # print(inbox['data'])
             for item in inbox['data']:
                 print('---------------------')
+                # print(item)
+                # continue
                 msgType = item['msg_type']
                 if(msgType == 'INS'):
                     sync.processInsert(item)

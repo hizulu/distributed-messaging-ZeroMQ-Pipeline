@@ -17,7 +17,7 @@ if (delay > 0):
         time.sleep(1)
         delay -= 1
 
-table_name = 'tb_coba'
+table_name = 'tb_mahasiswa'
 if (option == 'ins'):
     print(f"Testing INSERT {count} data")
     for i in range(count):

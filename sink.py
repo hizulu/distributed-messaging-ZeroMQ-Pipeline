@@ -75,7 +75,8 @@ while True:
     # print(s)
     print("------------------------")
     if ('error' in s):
-        print("Status: Invalid secret key or IV key")
+        print("Status: Invalid secret key or IV ke")
+        print(s)
     else:
         print(f"MSG ID: {s['data']['msg_id']}")
         print(f"Type: {s['data']['msg_type']}")
